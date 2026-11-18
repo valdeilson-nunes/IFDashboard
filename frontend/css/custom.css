@@ -1,0 +1,1022 @@
+/* ============================================================
+   TOKENS E VARIÁVEIS — TEMA CLARO (PADRÃO)
+============================================================ */
+:root {
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-hand: 'Caveat', cursive;
+
+  /* Cores temáticas do campus */
+  --color-tangerine: #FF6A3D;
+  --color-magenta: #E8447A;
+  --color-cobalt: #2E5EAA;
+  --color-marigold: #D99B00;
+  
+  --bg-page: #FCFAF4;
+  --card-bg: #FFFFFF;
+  --border-color: #E4DFCE;
+
+  --ink-primary: #1C201A;
+  --ink-secondary: #5C6254;
+
+  /* Badges pastel tema claro */
+  --badge-achados-bg: #FFE4D6;
+  --badge-achados-color: #7A2E15;
+  --badge-servicos-bg: #FCE0EA;
+  --badge-servicos-color: #6E1236;
+  --badge-pesquisa-bg: #DCE7F7;
+  --badge-pesquisa-color: #16264A;
+  --badge-editais-bg: #FFF1CC;
+  --badge-editais-color: #5C4108;
+}
+
+/* ============================================================
+   TOKENS E VARIÁVEIS — TEMA ESCURO (HIGH CONTRAST & USABILITY)
+============================================================ */
+[data-bs-theme="dark"],
+[data-theme="dark"],
+html[data-theme="dark"],
+body[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Variáveis de base do IFDashboard */
+  --bg-page: #13160F;
+  --card-bg: #1C2017;
+  --card-subtle: #23271D;
+  --border-color: #383D2D;
+
+  --ink-primary: #F4F3EE;
+  --ink-secondary: #C4C2B2;
+
+  --color-tangerine: #FF855D;
+  --color-magenta: #FF70A2;
+  --color-cobalt: #74A2F7;
+  --color-marigold: #FFD466;
+
+  /* Badges pastel tema escuro */
+  --badge-achados-bg: #4A2416;
+  --badge-achados-color: #FFB08C;
+  --badge-servicos-bg: #4A1830;
+  --badge-servicos-color: #FF9EC0;
+  --badge-pesquisa-bg: #182647;
+  --badge-pesquisa-color: #A3C2F5;
+  --badge-editais-bg: #453210;
+  --badge-editais-color: #FFDD8C;
+
+  /* Integração profunda com variáveis Bootstrap 5.3 */
+  --bs-body-bg: var(--bg-page);
+  --bs-body-color: var(--ink-primary);
+  --bs-secondary-color: var(--ink-secondary);
+  --bs-emphasis-color: #FFFFFF;
+  --bs-border-color: var(--border-color);
+  --bs-card-bg: var(--card-bg);
+  --bs-card-color: var(--ink-primary);
+  --bs-card-border-color: var(--border-color);
+  --bs-tertiary-bg: var(--card-subtle);
+  --bs-body-bg-rgb: 19, 22, 15;
+  --bs-body-color-rgb: 244, 243, 238;
+}
+
+/* ============================================================
+   ESTILOS GERAIS E TIPOGRAFIA
+============================================================ */
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-page);
+  color: var(--ink-primary);
+  min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  color: var(--ink-primary);
+}
+
+[data-bs-theme="dark"] .text-muted,
+[data-theme="dark"] .text-muted,
+[data-bs-theme="dark"] .form-text,
+[data-theme="dark"] .form-text {
+  color: var(--ink-secondary) !important;
+}
+
+[data-bs-theme="dark"] .text-dark,
+[data-theme="dark"] .text-dark {
+  color: var(--ink-primary) !important;
+}
+
+/* ============================================================
+   TOPBAR & NAVEGAÇÃO
+============================================================ */
+.barra-topo {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-color) !important;
+  backdrop-filter: blur(8px);
+}
+
+.larg-max-500 {
+  max-width: 500px;
+}
+
+.larg-max-700 {
+  max-width: 700px;
+}
+
+.nav-lateral .list-group-item {
+  border: none;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  font-weight: 500;
+  transition: all 0.15s ease-in-out;
+  color: var(--ink-primary);
+  background-color: transparent;
+}
+
+.nav-lateral .list-group-item:hover {
+  background-color: rgba(125, 125, 125, 0.08);
+}
+
+.nav-lateral .list-group-item.active {
+  background-color: #1C201A;
+  color: #FFF;
+}
+
+[data-bs-theme="dark"] .nav-lateral .list-group-item.active,
+[data-theme="dark"] .nav-lateral .list-group-item.active {
+  background-color: #F2EFE4;
+  color: #13160F;
+  font-weight: 600;
+}
+
+/* Botão Sandwitch: Pin da Logo como acionador do menu */
+.btn-pino-menu {
+  border: 1px solid transparent;
+  background: transparent;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.15s ease, border-color 0.15s ease;
+  padding: 0;
+}
+
+.btn-pino-menu:hover {
+  background-color: rgba(255, 106, 61, 0.12);
+  border-color: rgba(255, 106, 61, 0.25);
+  transform: scale(1.1) rotate(-8deg);
+}
+
+.btn-pino-menu:active {
+  transform: scale(0.95);
+}
+
+/* Modal Drawer Offcanvas do Menu Lateral */
+#sidebarMenu.offcanvas {
+  width: 320px;
+  max-width: 85vw;
+  background-color: var(--card-bg) !important;
+  border-right: 1px solid var(--border-color) !important;
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.35);
+  z-index: 1060;
+}
+
+#sidebarMenu .offcanvas-header {
+  background-color: var(--card-bg);
+  border-color: var(--border-color) !important;
+}
+
+#sidebarMenu .offcanvas-body {
+  background-color: var(--card-bg);
+}
+
+#sidebarMenu .list-group-item {
+  border-radius: 10px;
+  margin-bottom: 6px;
+  font-weight: 500;
+  transition: all 0.15s ease-in-out;
+}
+
+#sidebarMenu .list-group-item:hover {
+  background-color: rgba(125, 125, 125, 0.08);
+  transform: translateX(3px);
+}
+
+/* Botão de alternar tema */
+.btn-icone {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border-color: var(--border-color);
+  color: var(--ink-primary);
+}
+
+.btn-icone:hover {
+  background-color: rgba(125, 125, 125, 0.1);
+  color: var(--ink-primary);
+}
+
+/* ============================================================
+   CARDS DO MURAL & PIN INDICATORS
+============================================================ */
+.card-mural {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px;
+  color: var(--ink-primary);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  cursor: pointer;
+}
+
+.card-mural:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.card-mural-imagem {
+  position: relative;
+  background-color: var(--card-subtle, #F8F9FA);
+  border-color: var(--border-color) !important;
+}
+
+.card-mural-imagem img {
+  transition: transform 0.3s ease;
+}
+
+.card-mural:hover .card-mural-imagem img {
+  transform: scale(1.03);
+}
+
+.card-mural .card-title {
+  color: var(--ink-primary);
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.card-mural .card-text {
+  color: var(--ink-secondary) !important;
+}
+
+.card-mural .indicador-pino {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.pino-achados { background-color: var(--color-tangerine); }
+.pino-servicos { background-color: var(--color-magenta); }
+.pino-pesquisa { background-color: var(--color-cobalt); }
+.pino-editais { background-color: var(--color-marigold); }
+
+/* Badges de Categoria */
+.etiqueta-achados {
+  background-color: var(--badge-achados-bg) !important;
+  color: var(--badge-achados-color) !important;
+  font-weight: 600;
+}
+
+.etiqueta-servicos {
+  background-color: var(--badge-servicos-bg) !important;
+  color: var(--badge-servicos-color) !important;
+  font-weight: 600;
+}
+
+.etiqueta-pesquisa {
+  background-color: var(--badge-pesquisa-bg) !important;
+  color: var(--badge-pesquisa-color) !important;
+  font-weight: 600;
+}
+
+.etiqueta-editais {
+  background-color: var(--badge-editais-bg) !important;
+  color: var(--badge-editais-color) !important;
+  font-weight: 600;
+}
+
+/* ============================================================
+   CAMPOS DE FORMULÁRIO (INPUTS & SELECTS)
+============================================================ */
+.form-control,
+.form-select,
+.input-group-text {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--ink-primary);
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--card-bg);
+  border-color: var(--color-cobalt);
+  color: var(--ink-primary);
+  box-shadow: 0 0 0 0.25rem rgba(46, 94, 170, 0.25);
+}
+
+[data-bs-theme="dark"] .form-control,
+[data-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select,
+[data-theme="dark"] .form-select,
+[data-bs-theme="dark"] .input-group-text,
+[data-theme="dark"] .input-group-text {
+  background-color: #21261B !important;
+  border-color: var(--border-color) !important;
+  color: #F4F3EE !important;
+}
+
+[data-bs-theme="dark"] .form-control::placeholder,
+[data-theme="dark"] .form-control::placeholder {
+  color: #8C9180 !important;
+}
+
+/* Modais e Dropdowns */
+.modal-content {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--ink-primary);
+}
+
+.dropdown-menu {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--ink-primary);
+}
+
+.dropdown-item {
+  color: var(--ink-primary);
+}
+
+.dropdown-item:hover {
+  background-color: rgba(125, 125, 125, 0.1);
+  color: var(--ink-primary);
+}
+
+/* ============================================================
+   ESTILOS DA LANDING PAGE
+============================================================ */
+.marca-titulo {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: -0.5px;
+  color: var(--ink-primary);
+}
+
+.marca-subtitulo {
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ink-secondary);
+}
+
+.secao-principal {
+  background: radial-gradient(circle at top right, rgba(255, 106, 61, 0.08), transparent 45%),
+              radial-gradient(circle at bottom left, rgba(46, 94, 170, 0.06), transparent 45%);
+}
+
+[data-bs-theme="dark"] .secao-principal,
+[data-theme="dark"] .secao-principal {
+  background: radial-gradient(circle at top right, rgba(255, 106, 61, 0.12), transparent 50%),
+              radial-gradient(circle at bottom left, rgba(46, 94, 170, 0.10), transparent 50%);
+}
+
+/* Mini Post-its no Hero */
+.mini-bilhete {
+  border: 1px solid var(--border-color);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  color: var(--ink-primary);
+}
+
+.mini-bilhete-achados {
+  transform: rotate(-1.5deg);
+  background: #FFF7F2;
+  border-color: #F5D5C6;
+}
+
+.mini-bilhete-editais {
+  transform: rotate(1.5deg);
+  background: #FFFCF2;
+  border-color: #F5E8C6;
+}
+
+.mini-bilhete:hover {
+  transform: scale(1.02) rotate(0deg);
+}
+
+.mini-pino {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+[data-bs-theme="dark"] .mini-bilhete-achados,
+[data-theme="dark"] .mini-bilhete-achados {
+  background-color: #2D1A14 !important;
+  border-color: #5C2E20 !important;
+  color: #F5EAE6 !important;
+}
+
+[data-bs-theme="dark"] .mini-bilhete-achados .text-danger,
+[data-theme="dark"] .mini-bilhete-achados .text-danger {
+  color: #FFB08C !important;
+}
+
+[data-bs-theme="dark"] .mini-bilhete-editais,
+[data-theme="dark"] .mini-bilhete-editais {
+  background-color: #2B2513 !important;
+  border-color: #5C4F20 !important;
+  color: #F5F1E6 !important;
+}
+
+[data-bs-theme="dark"] .mini-bilhete-editais .text-warning-emphasis,
+[data-theme="dark"] .mini-bilhete-editais .text-warning-emphasis {
+  color: #FFDD8C !important;
+}
+
+/* Card de Login */
+.cartao-login {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--ink-primary);
+}
+
+.cartao-login .card-footer {
+  background-color: var(--card-subtle, #F8F9FA) !important;
+  border-top: 1px solid var(--border-color) !important;
+  color: var(--ink-secondary);
+}
+
+.icone-login {
+  width: 58px;
+  height: 58px;
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+.separador {
+  background-color: var(--card-bg) !important;
+  color: var(--ink-secondary) !important;
+}
+
+/* Botão de Visitante */
+.btn-visitante {
+  border: 1px dashed var(--border-color) !important;
+  background-color: rgba(125, 125, 125, 0.04);
+  color: var(--ink-primary) !important;
+  transition: all 0.2s ease;
+}
+
+.btn-visitante:hover {
+  border-color: var(--ink-secondary) !important;
+  background-color: rgba(125, 125, 125, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Seção de Features */
+.secao-recursos {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-color) !important;
+}
+
+.card-recurso {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--ink-primary);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-recurso:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1) !important;
+}
+
+.icone-recurso {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fundo-magenta-suave {
+  background-color: #FCE0EA !important;
+  color: #6E1236 !important;
+}
+
+.texto-magenta {
+  color: #E8447A !important;
+}
+
+[data-bs-theme="dark"] .fundo-magenta-suave,
+[data-theme="dark"] .fundo-magenta-suave {
+  background-color: #3D1426 !important;
+  color: #FF85AF !important;
+}
+
+[data-bs-theme="dark"] .bg-danger-subtle,
+[data-theme="dark"] .bg-danger-subtle {
+  background-color: #3D1914 !important;
+  color: #FF9B7D !important;
+}
+
+[data-bs-theme="dark"] .bg-primary-subtle,
+[data-theme="dark"] .bg-primary-subtle {
+  background-color: #142340 !important;
+  color: #8EB7FF !important;
+}
+
+[data-bs-theme="dark"] .bg-warning-subtle,
+[data-theme="dark"] .bg-warning-subtle {
+  background-color: #382C10 !important;
+  color: #FFE082 !important;
+}
+
+[data-bs-theme="dark"] .texto-magenta,
+[data-theme="dark"] .texto-magenta {
+  color: #FF85AF !important;
+}
+
+/* Rodapé */
+.rodape {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-color) !important;
+  color: var(--ink-secondary) !important;
+}
+
+/* ============================================================
+   ESTILOS DO CALENDÁRIO INTERATIVO (CAMPUS LAPA)
+============================================================ */
+.card-calendario,
+.card-agenda {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.grade-calendario {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.dia-semana-cal {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-align: center;
+  color: var(--ink-secondary);
+  padding: 0.3rem 0;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dia-cal {
+  min-width: 0;
+  max-width: 100%;
+  height: 94px;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.4rem 0.45rem;
+  background-color: var(--card-bg);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+@media (max-width: 768px) {
+  .dia-cal {
+    height: 64px;
+    padding: 0.25rem;
+  }
+  .etiqueta-evento-cal,
+  .mais-eventos-cal {
+    display: none !important;
+  }
+}
+
+.dia-cal:not(.vazio):hover {
+  transform: translateY(-2px);
+  border-color: var(--color-cobalt);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.dia-cal.vazio {
+  border: none;
+  background: transparent;
+  cursor: default;
+}
+
+.dia-cal.hoje {
+  border-color: var(--color-marigold) !important;
+  background-color: rgba(255, 195, 61, 0.08);
+}
+
+.dia-cal.hoje .numero-dia-cal {
+  color: var(--color-marigold);
+  font-weight: 800;
+}
+
+.dia-cal.selecionado {
+  border-color: var(--color-cobalt) !important;
+  box-shadow: 0 0 0 2px var(--color-cobalt) inset;
+}
+
+.numero-dia-cal {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-primary);
+  line-height: 1;
+  margin-bottom: 0.2rem;
+}
+
+.pontos-cal {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  min-height: 8px;
+  align-items: center;
+}
+
+.ponto-cal {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.indicador-ponto-cal {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.etiqueta-evento-cal {
+  font-size: 0.68rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 2px 5px;
+  border-radius: 4px;
+  margin-top: 2px;
+  font-weight: 500;
+  border-left: 2px solid currentColor;
+  line-height: 1.25;
+}
+
+.mais-eventos-cal {
+  font-size: 0.62rem;
+  line-height: 1;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+/* Agenda Lateral */
+.item-agenda {
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  border-radius: 10px;
+  padding: 0.75rem;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+.item-agenda:hover {
+  transform: translateX(3px);
+  border-color: var(--color-cobalt);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.item-agenda .etiqueta-cat-agenda {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+
+
+/* ============================================================
+   CARROSSEL DE DESTAQUES INSTITUCIONAL (CAMPUS BOM JESUS DA LAPA)
+============================================================ */
+.destaque-cabecalho {
+  color: #198754;
+  font-family: var(--font-display);
+  letter-spacing: 0.8px;
+  font-size: 0.85rem;
+}
+
+[data-bs-theme="dark"] .destaque-cabecalho,
+[data-theme="dark"] .destaque-cabecalho {
+  color: #4ade80;
+}
+
+/* Card Principal Maior do Slide */
+.card-destaque-principal {
+  height: 330px;
+  width: 100%;
+  cursor: pointer;
+  background-color: #1a1a1a;
+  border: 1px solid var(--border-color);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-destaque-principal:hover {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+.card-destaque-img-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.5s ease-in-out, transform 0.6s ease;
+}
+
+.card-destaque-principal:hover .card-destaque-img-bg {
+  transform: scale(1.02);
+}
+
+/* Fallback com gradiente bonito quando o post não tem imagem */
+.card-destaque-fallback-bg {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0d381e 0%, #175e33 45%, #2c7a4b 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.card-destaque-fallback-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.12) 0%, transparent 60%);
+}
+
+/* Gradiente escuro sobre a imagem para garantir leitura perfeita do título */
+.card-destaque-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.55) 55%, rgba(0, 0, 0, 0.1) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.5rem;
+  z-index: 2;
+}
+
+.card-destaque-conteudo {
+  max-width: 82%;
+}
+
+.card-destaque-titulo-principal {
+  color: #FFFFFF;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 0.35rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-destaque-subtexto {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* Indicadores de Slide no canto inferior direito (quadradinhos no estilo da imagem) */
+.card-destaque-indicadores {
+  position: absolute;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  display: flex;
+  gap: 5px;
+  z-index: 3;
+}
+
+.indicador-slide {
+  width: 14px;
+  height: 9px;
+  border-radius: 2px;
+  background-color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.indicador-slide:hover {
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+.indicador-slide.ativo {
+  background-color: #22c55e; /* Verde brilhante institucional */
+  width: 18px;
+}
+
+/* Lista Lateral de Notícias Rápidas */
+.destaques-lista-lateral {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.item-noticia-lateral {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.item-noticia-lateral:first-child {
+  padding-top: 0;
+}
+
+.item-noticia-lateral:last-child {
+  border-bottom: none;
+}
+
+.item-noticia-lateral:hover .item-noticia-titulo {
+  color: #198754;
+}
+
+.item-noticia-lateral.ativo-lateral {
+  border-left: 3px solid #198754;
+  padding-left: 0.65rem;
+}
+
+.item-noticia-lateral.ativo-lateral .item-noticia-titulo {
+  color: #198754;
+}
+
+[data-bs-theme="dark"] .item-noticia-lateral:hover .item-noticia-titulo,
+[data-theme="dark"] .item-noticia-lateral:hover .item-noticia-titulo,
+[data-bs-theme="dark"] .item-noticia-lateral.ativo-lateral .item-noticia-titulo,
+[data-theme="dark"] .item-noticia-lateral.ativo-lateral .item-noticia-titulo {
+  color: #4ade80;
+}
+
+.item-noticia-titulo {
+  font-family: var(--font-display);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--ink-primary);
+  line-height: 1.35;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 0.15s ease;
+}
+
+.item-noticia-meta {
+  font-size: 0.72rem;
+  color: var(--ink-secondary);
+}
+
+/* Botão Verde institucional "+ notícias" */
+.btn-sucesso-if {
+  background-color: #198754;
+  color: #FFFFFF !important;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  text-decoration: none;
+  display: inline-block;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  border: none;
+}
+
+.btn-sucesso-if:hover {
+  background-color: #157347;
+  color: #FFFFFF !important;
+  transform: translateY(-1px);
+}
+
+/* Responsividade */
+@media (max-width: 991.98px) {
+  .card-destaque-principal {
+    height: 250px;
+  }
+  .card-destaque-titulo-principal {
+    font-size: 1.15rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .card-destaque-principal {
+    height: 210px;
+  }
+  .card-destaque-titulo-principal {
+    font-size: 1rem;
+  }
+  .card-destaque-conteudo {
+    max-width: 75%;
+  }
+  .card-destaque-overlay {
+    padding: 1rem;
+  }
+}
+
+/* ============================================================
+   ESTILOS DO MEU PERFIL (TEMA CLARO E ESCURO)
+============================================================ */
+.card-perfil-header {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+#perfilTabs .btn {
+  font-weight: 500;
+  transition: all 0.15s ease-in-out;
+}
+
+#perfilTabs .btn.active {
+  background-color: #1C201A;
+  color: #FFFFFF;
+  border-color: #1C201A;
+}
+
+[data-bs-theme="dark"] #perfilTabs .btn.active,
+[data-theme="dark"] #perfilTabs .btn.active {
+  background-color: #F2EFE4;
+  color: #13160F;
+  border-color: #F2EFE4;
+}
+
+.card-notificacao {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card-notificacao:hover {
+  transform: translateX(3px);
+  border-color: var(--color-cobalt);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.card-notificacao.nao-lida {
+  border-left: 4px solid var(--color-cobalt);
+  background-color: rgba(46, 94, 170, 0.03);
+}
+
+[data-bs-theme="dark"] .card-notificacao.nao-lida,
+[data-theme="dark"] .card-notificacao.nao-lida {
+  background-color: rgba(116, 162, 247, 0.06);
+}
+
+.empty-state-perfil {
+  padding: 3.5rem 1rem;
+  text-align: center;
+  border: 2px dashed var(--border-color);
+  border-radius: 16px;
+  background-color: rgba(125, 125, 125, 0.02);
+}

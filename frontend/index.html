@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IFDashboard — Mural do Campus Lapa</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 CSS & Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- Estilos Customizados -->
+  <link rel="stylesheet" href="css/custom.css">
+</head>
+<body data-theme="light">
+
+  <!-- NAVBAR / barra-topo -->
+  <header class="navbar navbar-expand-lg border-bottom sticky-top barra-topo">
+    <div class="container-fluid px-3 px-lg-4">
+      
+      <!-- BOTÃO SANDWITCH: PIN DA LOGO (ABRE O MENU LATERAL MODAL) -->
+      <div class="d-flex align-items-center me-2">
+        <button class="btn btn-pino-menu" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-label="Abrir Menu Lateral" title="Abrir Menu">
+          <i class="bi bi-pin-angle-fill text-danger fs-3"></i>
+        </button>
+      </div>
+
+      <!-- Barra de Busca Central -->
+      <div class="d-none d-md-flex flex-grow-1 larg-max-500 mx-auto">
+        <div class="input-group">
+          <span class="input-group-text border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" id="globalSearchInput" class="form-control border-start-0 ps-0" placeholder="Buscar no mural do campus...">
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-2 ms-auto">
+        <button class="btn btn-primary d-flex align-items-center gap-2 px-3" data-bs-toggle="modal" data-bs-target="#newPostModal">
+          <i class="bi bi-plus-lg"></i>
+          <span class="d-none d-sm-inline">Publicar</span>
+        </button>
+
+        <button class="btn btn-outline-secondary btn-icone" id="themeToggleBtn" title="Alternar tema">
+          <i class="bi bi-moon-stars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MENU LATERAL MODAL (OFFCANVAS FLUTUANTE QUE NÃO ALTERA O ESPAÇO DA PÁGINA) -->
+  <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
+    <div class="offcanvas-header border-bottom py-3 px-4">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-pin-angle-fill text-danger fs-3"></i>
+        <div>
+          <h5 class="offcanvas-title fw-bold mb-0" id="sidebarMenuLabel" style="font-family: var(--font-display);">IFDashboard</h5>
+          <small class="text-muted" style="font-size: 0.72rem;">Campus Lapa • IF Baiano</small>
+        </div>
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar Menu"></button>
+    </div>
+    
+    <div class="offcanvas-body p-3">
+      <!-- Card Rápido do Usuário Logado -->
+      <div class="p-3 mb-3 rounded-3 bg-body-secondary border d-flex align-items-center gap-3">
+        <span class="badge rounded-circle bg-danger text-white p-2 fs-5" id="drawerUserBadge" style="width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;">U</span>
+        <div class="overflow-hidden">
+          <div class="fw-bold text-truncate" id="drawerUserName">Usuário</div>
+          <small class="text-muted text-truncate d-block" id="drawerUserEmail" style="font-size: 0.75rem;">usuario@ifbaiano.edu.br</small>
+        </div>
+      </div>
+
+      <!-- Links de Navegação com Ícones e Destaque -->
+      <div class="list-group list-group-flush nav-lateral">
+        <a href="#" class="list-group-item list-group-item-action active py-3" data-nav="home" onclick="navegar('home')">
+          <i class="bi bi-grid-fill me-3 fs-5"></i> Mural do Campus
+        </a>
+        <a href="#" class="list-group-item list-group-item-action py-3" data-nav="achados" onclick="navegar('achados')">
+          <i class="bi bi-search-heart me-3 fs-5" style="color:var(--color-tangerine)"></i> Achados e Perdidos
+        </a>
+        <a href="#" class="list-group-item list-group-item-action py-3" data-nav="servicos" onclick="navegar('servicos')">
+          <i class="bi bi-tag-fill me-3 fs-5" style="color:var(--color-magenta)"></i> Serviços e Vendas
+        </a>
+        <a href="#" class="list-group-item list-group-item-action py-3" data-nav="pesquisa" onclick="navegar('pesquisa')">
+          <i class="bi bi-mortarboard-fill me-3 fs-5" style="color:var(--color-cobalt)"></i> Pesquisa e Extensão
+        </a>
+        <a href="#" class="list-group-item list-group-item-action py-3" data-nav="editais" onclick="navegar('editais')">
+          <i class="bi bi-megaphone-fill me-3 fs-5" style="color:var(--color-marigold)"></i> Editais e Avisos
+        </a>
+        <a href="#" class="list-group-item list-group-item-action py-3" data-nav="calendario" onclick="navegar('calendario')">
+          <i class="bi bi-calendar3 me-3 fs-5 text-info"></i> Calendário Acadêmico
+        </a>
+        <a href="#" class="list-group-item list-group-item-action py-3" data-nav="perfil" onclick="navegar('perfil')">
+          <i class="bi bi-person-circle me-3 fs-5 text-secondary"></i> Meu Perfil
+        </a>
+      </div>
+    </div>
+
+    <!-- Rodapé do Menu Drawer -->
+    <div class="p-3 border-top bg-body-tertiary">
+      <button class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2" onclick="fazerLogout()">
+        <i class="bi bi-box-arrow-right"></i> Sair para a Landing Page
+      </button>
+    </div>
+  </div>
+
+  <!-- LAYOUT PRINCIPAL: CONTEÚDO OCUPA 100% DA LARGURA (SEM MUDANÇA DE ESPAÇO) -->
+  <div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="row">
+      <!-- ÁREA DE CONTEÚDO PRINCIPAL -->
+      <main class="col-12">
+        
+        <!-- CABEÇALHO DA SEÇÃO ATUAL -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+          <div>
+            <h2 class="h3 fw-bold mb-1" id="sectionTitle">Mural do Campus</h2>
+            <p class="text-muted small mb-0" id="sectionSubtitle">Avisos oficiais, achados, serviços e oportunidades da comunidade acadêmica.</p>
+          </div>
+
+          <!-- Filtros de Ordenação / Filtros rápidos -->
+          <div class="btn-group mt-2 mt-sm-0" role="group" id="sortFilterGroup">
+            <button type="button" class="btn btn-outline-secondary btn-sm active" data-sort="recent" onclick="definirOrdenacao('recent')">Recentes</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-sort="likes" onclick="definirOrdenacao('likes')">Mais curtidos</button>
+          </div>
+        </div>
+
+        <!-- MENSAGEM DE ALERTA DE STATUS / FEEDBACK -->
+        <div id="statusAlert" class="alert alert-info d-none alert-dismissible fade show" role="alert">
+          <span id="statusAlertText">Conectando à API...</span>
+          <button type="button" class="btn-close" onclick="ocultarAlerta()" aria-label="Close"></button>
+        </div>
+
+        <!-- DESTAQUES: CARROSSEL INSTITUCIONAL ESTILO PORTAL IF (apenas na aba home) -->
+        <div id="destaquesView" class="mb-4 pb-2 border-bottom d-none">
+          <div class="mb-2">
+            <span class="destaque-cabecalho fw-bold small text-uppercase">
+              <i class="bi bi-pin-fill text-success me-1"></i>Acontece no Campus Bom Jesus da Lapa
+            </span>
+          </div>
+
+          <div class="row g-3 align-items-stretch">
+            <!-- Card Principal Maior (Slide com alternância automática) -->
+            <div class="col-lg-8">
+              <div class="card-destaque-principal position-relative rounded-3 overflow-hidden shadow-sm" id="cardDestaquePrincipal">
+                <!-- Conteúdo do slide ativo inserido dinamicamente via JS -->
+              </div>
+            </div>
+
+            <!-- Lista Lateral de Notícias Rápidas -->
+            <div class="col-lg-4 d-flex flex-column justify-content-between">
+              <div class="destaques-lista-lateral" id="destaquesListaLateral">
+                <!-- Manchetes das outras notícias do carrossel via JS -->
+              </div>
+              <div class="pt-2">
+                <a href="#postsContainer" class="btn btn-sm btn-sucesso-if px-3 fw-bold" onclick="rolarParaMural(event)">
+                  + notícias
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MURAL / FEED VIEW (POSTS) -->
+        <div id="postsView">
+          <div class="row g-3" id="postsContainer">
+            <!-- Cards carregados dinamicamente via JS -->
+            <div class="col-12 text-center py-5 text-muted">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+              </div>
+              <p class="mt-2 small">Carregando publicações do mural...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- CALENDÁRIO INTERATIVO VIEW -->
+        <div id="calendarView" class="d-none">
+          <div class="row g-4">
+            
+            <!-- COLUNA PRINCIPAL: GRID DO CALENDÁRIO -->
+            <div class="col-xl-8">
+              <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 card-calendario">
+                
+                <!-- HEADER DO MÊS / CONTROLES DE NAVEGAÇÃO -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-3 border-bottom gap-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <h3 class="h4 fw-bold mb-0" id="calMonthLabel" style="font-family: var(--font-display);">Novembro 2026</h3>
+                    <span class="badge bg-body-secondary text-body border" id="eventsCountBadge">0 eventos</span>
+                  </div>
+
+                  <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="irParaHoje()" title="Ir para o dia de hoje">
+                      <i class="bi bi-calendar-check me-1"></i> Hoje
+                    </button>
+                    <div class="btn-group" role="group">
+                      <button class="btn btn-outline-secondary btn-sm" onclick="mudarMes(-1)" aria-label="Mês anterior" title="Mês anterior">
+                        <i class="bi bi-chevron-left"></i>
+                      </button>
+                      <button class="btn btn-outline-secondary btn-sm" onclick="mudarMes(1)" aria-label="Próximo mês" title="Próximo mês">
+                        <i class="bi bi-chevron-right"></i>
+                      </button>
+                    </div>
+                    <button class="btn btn-primary btn-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#newEventModal">
+                      <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Novo Evento</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- CABEÇALHO DOS DIAS DA SEMANA E GRID MENSAL -->
+                <div class="grade-calendario" id="calGrid">
+                  <!-- Renderizado dinamicamente via JS -->
+                </div>
+
+                <!-- LEGENDA DE CORES DAS CATEGORIAS -->
+                <div class="legenda-cal d-flex flex-wrap align-items-center gap-3 mt-3 pt-3 border-top small text-muted">
+                  <span class="fw-semibold text-body">Categorias:</span>
+                  <span class="d-inline-flex align-items-center gap-1">
+                    <span class="indicador-ponto-cal pino-achados"></span> Achados e Perdidos
+                  </span>
+                  <span class="d-inline-flex align-items-center gap-1">
+                    <span class="indicador-ponto-cal pino-servicos"></span> Serviços e Vendas
+                  </span>
+                  <span class="d-inline-flex align-items-center gap-1">
+                    <span class="indicador-ponto-cal pino-pesquisa"></span> Pesquisa e Extensão
+                  </span>
+                  <span class="d-inline-flex align-items-center gap-1">
+                    <span class="indicador-ponto-cal pino-editais"></span> Editais e Avisos
+                  </span>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- COLUNA LATERAL: AGENDA DO DIA SELECIONADO -->
+            <div class="col-xl-4">
+              <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 card-agenda sticky-top" style="top: 85px;">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                  <div>
+                    <h5 class="fw-bold mb-0" id="agendaTitle" style="font-family: var(--font-display);">Agenda do dia</h5>
+                    <small class="text-muted" id="agendaSubtitle">Selecione uma data para detalhar</small>
+                  </div>
+                  <span class="badge bg-primary text-white rounded-pill px-2" id="agendaEventsCount">0</span>
+                </div>
+
+                <!-- LISTA DE EVENTOS DO DIA -->
+                <div id="agendaList" class="d-flex flex-column gap-2 overflow-auto" style="max-height: 480px;">
+                  <!-- Carregado via JS -->
+                </div>
+
+                <div class="mt-3 pt-3 border-top text-center">
+                  <button class="btn btn-outline-primary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#newEventModal">
+                    <i class="bi bi-calendar-plus me-1"></i> Agendar evento nesta data
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- MEU PERFIL VIEW (MINHAS PUBLICAÇÕES, ITENS SALVOS, CURTIDAS, NOTIFICAÇÕES) -->
+        <div id="perfilView" class="d-none">
+          <!-- Card de Apresentação do Perfil -->
+          <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 card-perfil-header">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+              <div class="d-flex align-items-center gap-3">
+                <span class="badge rounded-circle bg-danger text-white p-3 fs-3" id="profileBadgeLetter" style="width:58px;height:58px;display:inline-flex;align-items:center;justify-content:center;">U</span>
+                <div>
+                  <h4 class="fw-bold mb-1" id="profileName" style="font-family: var(--font-display);">Usuário</h4>
+                  <p class="text-muted small mb-0" id="profileEmail">usuario@ifbaiano.edu.br</p>
+                </div>
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3" data-bs-toggle="modal" data-bs-target="#newPostModal">
+                  <i class="bi bi-plus-lg"></i> Nova Publicação
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barra de Abas / Chips do Perfil (Estilo Protótipo) -->
+          <div class="d-flex flex-wrap gap-2 mb-4" id="perfilTabs">
+            <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1 active" data-perfil-aba="meus" onclick="mudarAbaPerfil('meus')">
+              <i class="bi bi-card-text me-1"></i>Minhas Publicações <span class="badge bg-secondary rounded-pill ms-1" id="countMeus">0</span>
+            </button>
+            <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1" data-perfil-aba="salvos" onclick="mudarAbaPerfil('salvos')">
+              <i class="bi bi-bookmark-fill me-1 text-warning"></i>Itens Salvos <span class="badge bg-secondary rounded-pill ms-1" id="countSalvos">0</span>
+            </button>
+            <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1" data-perfil-aba="curtidos" onclick="mudarAbaPerfil('curtidos')">
+              <i class="bi bi-heart-fill me-1 text-danger"></i>Curtidas <span class="badge bg-secondary rounded-pill ms-1" id="countCurtidos">0</span>
+            </button>
+            <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1" data-perfil-aba="notificacoes" onclick="mudarAbaPerfil('notificacoes')">
+              <i class="bi bi-bell-fill me-1 text-info"></i>Notificações <span class="badge bg-danger rounded-pill ms-1" id="countNotificacoes">0</span>
+            </button>
+          </div>
+
+          <!-- Container do Conteúdo do Perfil -->
+          <div id="perfilContent">
+            <!-- Renderizado dinamicamente via JS -->
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVA PUBLICAÇÃO -->
+  <div class="modal fade" id="newPostModal" tabindex="-1" aria-labelledby="newPostModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="newPostForm" onsubmit="enviarNovaPublicacao(event)">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="newPostModalLabel">Publicar no Mural</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            
+            <div class="mb-3">
+              <label for="postCategory" class="form-label">Categoria</label>
+              <select class="form-select" id="postCategory" required onchange="aoMudarCategoria()">
+                <option value="achados">Achados e Perdidos</option>
+                <option value="servicos">Serviços e Vendas</option>
+                <option value="pesquisa">Pesquisa e Extensão</option>
+                <option value="editais">Editais e Avisos</option>
+              </select>
+            </div>
+
+            <!-- Campos Condicionais: Achados -->
+            <div class="mb-3" id="conditionalAchados">
+              <label for="postSubTypeAchados" class="form-label">Situação</label>
+              <select class="form-select" id="postSubTypeAchados">
+                <option value="achado">Achei algo</option>
+                <option value="perdido">Perdi algo</option>
+              </select>
+            </div>
+
+            <!-- Campos Condicionais: Serviços/Vendas -->
+            <div class="row g-2 mb-3 d-none" id="conditionalServicos">
+              <div class="col-md-6">
+                <label for="postSubTypeServicos" class="form-label">Tipo de Anúncio</label>
+                <select class="form-select" id="postSubTypeServicos">
+                  <option value="produto">Produto</option>
+                  <option value="servico">Serviço</option>
+                  <option value="aula">Aula particular</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="postPrice" class="form-label">Valor (R$)</label>
+                <input type="text" class="form-control" id="postPrice" placeholder="Ex: R$ 35,00 ou A combinar">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="postTitle" class="form-label">Título</label>
+              <input type="text" class="form-control" id="postTitle" placeholder="Ex: Chave encontrada no Bloco B" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="postDesc" class="form-label">Descrição</label>
+              <textarea class="form-control" id="postDesc" rows="3" placeholder="Detalhes que facilitem identificar ou responder..."></textarea>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-md-6">
+                <label for="postLocation" class="form-label">Local no Campus</label>
+                <input type="text" class="form-control" id="postLocation" placeholder="Ex: Bloco B, Cantina, etc.">
+              </div>
+              <div class="col-md-6">
+                <label for="postWpp" class="form-label">WhatsApp de Contato</label>
+                <input type="text" class="form-control" id="postWpp" placeholder="Ex: 5577999999999">
+              </div>
+            </div>
+
+            <!-- Anexo de Imagem (Carregar arquivo do usuário) -->
+            <div class="mb-3">
+              <label for="postImageFile" class="form-label small fw-semibold">
+                <i class="bi bi-image text-muted me-1"></i>Foto ou Imagem do Anúncio (Carregar do dispositivo)
+              </label>
+              <input type="file" class="form-control" id="postImageFile" accept="image/png, image/jpeg, image/webp, image/gif" onchange="previsualizarImagem(event)">
+              <div class="form-text text-muted small">Carregue uma imagem do seu dispositivo (PNG, JPG, WEBP até 16MB).</div>
+              
+              <!-- Pré-visualização da imagem carregada com botão para remover -->
+              <div id="postImagePreviewContainer" class="mt-2 position-relative d-none rounded-3 overflow-hidden border" style="max-height: 220px; background-color: var(--card-subtle);">
+                <img id="postImagePreview" src="" alt="Prévia da foto" class="w-100 object-fit-cover" style="max-height: 220px;">
+                <button type="button" class="btn btn-sm btn-dark position-absolute top-0 end-0 m-2 rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 32px; height: 32px;" onclick="limparUploadImagem()" title="Remover imagem">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btnSubmitPost">Publicar agora</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALHES COMPLETOS DA PUBLICAÇÃO -->
+  <div class="modal fade" id="postDetailModal" tabindex="-1" aria-labelledby="postDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header border-bottom py-3">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-pill px-3 py-1" id="postModalBadge">Categoria</span>
+            <span class="badge bg-body-secondary text-body border" id="postModalSubType">Subtipo</span>
+            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle d-none" id="postModalPinned">
+              <i class="bi bi-pin-fill"></i> Fixado
+            </span>
+          </div>
+          <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <div class="modal-body p-4">
+          <!-- Imagem da Publicação (quando existir) -->
+          <div id="postModalImageContainer" class="mb-4 text-center overflow-hidden rounded-4 border d-none" style="max-height: 400px; background-color: var(--card-subtle);">
+            <img id="postModalImage" src="" alt="Imagem da publicação" class="img-fluid w-100 object-fit-cover" style="max-height: 400px;">
+          </div>
+
+          <h3 class="fw-bold mb-2" id="postModalTitle" style="font-family: var(--font-display);">Título</h3>
+          
+          <!-- Metadados (Autor, Local, Data) -->
+          <div class="d-flex flex-wrap align-items-center gap-3 text-muted small mb-3 pb-3 border-bottom">
+            <span id="postModalAuthor"><i class="bi bi-person me-1"></i>Autor</span>
+            <span id="postModalLocation"><i class="bi bi-geo-alt me-1"></i>Campus Lapa</span>
+            <span id="postModalDate"><i class="bi bi-clock me-1"></i>Data</span>
+          </div>
+
+          <!-- Preço / Prazo destacados -->
+          <div id="postModalHighlight" class="mb-3 d-none"></div>
+
+          <!-- Descrição Completa -->
+          <div class="mb-4">
+            <h6 class="fw-bold text-muted small text-uppercase mb-2">Descrição</h6>
+            <p class="text-body lh-base fs-6" id="postModalDesc" style="white-space: pre-line;">Descrição detalhada...</p>
+          </div>
+
+          <!-- Ações (WhatsApp + Curtidas) -->
+          <div class="d-flex flex-wrap justify-content-between align-items-center pt-3 border-top gap-2">
+            <div id="postModalWppContainer" class="d-none">
+              <a id="postModalWppBtn" href="#" target="_blank" class="btn btn-success d-flex align-items-center gap-2 px-3">
+                <i class="bi bi-whatsapp fs-5"></i>
+                <span>Falar no WhatsApp</span>
+              </a>
+            </div>
+
+            <!-- Ações (WhatsApp + Salvar + Curtidas) -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center pt-3 border-top gap-2">
+              <div id="postModalWppContainer" class="d-none">
+                <a id="postModalWppBtn" href="#" target="_blank" class="btn btn-success d-flex align-items-center gap-2 px-3">
+                  <i class="bi bi-whatsapp fs-5"></i>
+                  <span>Falar no WhatsApp</span>
+                </a>
+              </div>
+
+              <div class="d-flex align-items-center gap-2 ms-auto">
+                <!-- Botão de Salvar no Modal -->
+                <button class="btn btn-outline-warning text-dark d-flex align-items-center gap-2" id="postModalSaveBtn" onclick="aoSalvarNoModal()">
+                  <i class="bi bi-bookmark" id="postModalSaveIcon"></i>
+                  <span id="postModalSaveText">Salvar</span>
+                </button>
+
+                <!-- Curtidas: só exibe se NÃO for categoria achados -->
+                <div id="postModalLikesContainer" class="d-flex align-items-center gap-2">
+                  <button class="btn btn-outline-danger d-flex align-items-center gap-2" id="postModalLikeBtn">
+                    <i class="bi bi-heart" id="postModalLikeIcon"></i>
+                    <span id="postModalLikeText">Curtir</span>
+                    <span class="badge bg-danger text-white rounded-pill ms-1" id="postModalLikeCount">0</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+        </div>
+        
+        <div class="modal-footer bg-body-tertiary">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVO EVENTO NO CALENDÁRIO -->
+  <div class="modal fade" id="newEventModal" tabindex="-1" aria-labelledby="newEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="newEventForm" onsubmit="salvarNovoEvento(event)">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="newEventModalLabel">
+              <i class="bi bi-calendar-plus text-primary me-2"></i>Agendar Evento
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            
+            <div class="mb-3">
+              <label for="eventTitle" class="form-label small fw-semibold">Título do Evento / Prazo</label>
+              <input type="text" class="form-control" id="eventTitle" placeholder="Ex: Prazo final para envio de relatório" required>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-md-6">
+                <label for="eventDate" class="form-label small fw-semibold">Data</label>
+                <input type="date" class="form-control" id="eventDate" required>
+              </div>
+              <div class="col-md-6">
+                <label for="eventCategory" class="form-label small fw-semibold">Categoria</label>
+                <select class="form-select" id="eventCategory" required>
+                  <option value="editais">Editais e Avisos</option>
+                  <option value="pesquisa">Pesquisa e Extensão</option>
+                  <option value="achados">Achados e Perdidos</option>
+                  <option value="servicos">Serviços e Vendas</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="eventDesc" class="form-label small fw-semibold">Descrição / Observações</label>
+              <textarea class="form-control" id="eventDesc" rows="3" placeholder="Informações complementares sobre horários, locais ou instruções..."></textarea>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btnSubmitEvent">Salvar no Calendário</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALHES DO EVENTO -->
+  <div class="modal fade" id="eventDetailModal" tabindex="-1" aria-labelledby="eventDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span class="badge rounded-pill px-3 py-1" id="modalEventBadge">Categoria</span>
+          <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <h4 class="fw-bold mb-2" id="modalEventTitle" style="font-family: var(--font-display);">Título do Evento</h4>
+          <div class="d-flex align-items-center gap-2 text-muted small mb-3">
+            <i class="bi bi-calendar3"></i>
+            <span id="modalEventDate">Data do evento</span>
+          </div>
+          <p class="text-body mb-0" id="modalEventDesc">Descrição do evento...</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Scripts da Aplicação -->
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
+
