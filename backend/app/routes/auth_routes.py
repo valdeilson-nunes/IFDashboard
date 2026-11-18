@@ -70,3 +70,38 @@ def entrar_como_visitante():
     }), 200
 
 login_as_guest = entrar_como_visitante
+
+@rotas_autenticacao.route('/register', methods=['POST'])
+def cadastrar_usuario():
+    """Registra um novo usuário no sistema"""
+    dados = request.get_json() or {}
+    nome = dados.get('name', '').strip()
+    email = dados.get('email', '').strip().lower()
+    senha = dados.get('password', '').strip()
+
+    if not nome:
+        return jsonify({'error': 'Nome completo é obrigatório'}), 400
+    if not email:
+        return jsonify({'error': 'E-mail institucional é obrigatório'}), 400
+    if not senha or len(senha) < 6:
+        return jsonify({'error': 'A senha deve conter no mínimo 6 caracteres'}), 400
+
+    usuario_existente = Usuario.query.filter_by(email=email).first()
+    if usuario_existente:
+        return jsonify({'error': 'Este e-mail já está cadastrado no sistema'}), 409
+
+    novo_usuario = Usuario(
+        name=nome,
+        email=email,
+        role="student"
+    )
+    novo_usuario.definir_senha(senha)
+    db.session.add(novo_usuario)
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Cadastro realizado com sucesso',
+        'user': novo_usuario.para_dicionario()
+    }), 201
+
+register = cadastrar_usuario

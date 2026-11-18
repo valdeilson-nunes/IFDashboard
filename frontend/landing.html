@@ -34,6 +34,9 @@
         <button class="btn btn-outline-secondary btn-icone" id="themeToggleBtn" title="Alternar tema">
           <i class="bi bi-moon-stars"></i>
         </button>
+        <button class="btn btn-primary d-none d-sm-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#registerModal">
+          <i class="bi bi-person-plus"></i> Cadastre-se
+        </button>
         <a href="#loginSection" class="btn btn-outline-primary d-none d-sm-inline-flex align-items-center gap-1">
           <i class="bi bi-box-arrow-in-right"></i> Acessar
         </a>
@@ -197,8 +200,8 @@
 
             </div>
             <div class="card-footer bg-light border-0 py-3 text-center">
-              <span class="text-muted small">Primeiro acesso no campus? </span>
-              <a href="javascript:void(0)" onclick="fazerLoginVisitante()" class="fw-semibold text-primary small text-decoration-none">Acesse o modo demonstração</a>
+              <span class="text-muted small">Não possui uma conta? </span>
+              <a href="#" data-bs-toggle="modal" data-bs-target="#registerModal" class="fw-semibold text-primary small text-decoration-none">Cadastre-se gratuitamente</a>
             </div>
           </div>
         </div>
@@ -264,6 +267,108 @@
       </div>
     </div>
   </section>
+
+  <!-- MODAL: CADASTRO DE NOVO USUÁRIO -->
+  <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+        <form id="registerForm" onsubmit="fazerCadastro(event)">
+          <div class="modal-header border-bottom py-3 px-4 bg-body-tertiary">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-person-plus-fill text-primary fs-4"></i>
+              <div>
+                <h5 class="modal-title fw-bold mb-0" id="registerModalLabel" style="font-family: var(--font-display);">Criar Conta no IFDashboard</h5>
+                <small class="text-muted" style="font-size: 0.75rem;">Mural do IF Baiano • Campus Lapa</small>
+              </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+
+          <div class="modal-body p-4">
+            <!-- ALERTA DE STATUS / FEEDBACK DE CADASTRO -->
+            <div id="registerAlert" class="alert alert-danger d-none py-2 small" role="alert">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              <span id="registerAlertMessage">Erro ao cadastrar</span>
+            </div>
+
+            <div class="mb-3">
+              <label for="registerName" class="form-label small fw-semibold">Nome Completo</label>
+              <div class="input-group">
+                <span class="input-group-text bg-transparent"><i class="bi bi-person text-muted"></i></span>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="registerName" 
+                  placeholder="Ex: Carlos Eduardo Silva" 
+                  required
+                >
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="registerEmail" class="form-label small fw-semibold">E-mail Institucional</label>
+              <div class="input-group">
+                <span class="input-group-text bg-transparent"><i class="bi bi-envelope text-muted"></i></span>
+                <input 
+                  type="email" 
+                  class="form-control" 
+                  id="registerEmail" 
+                  placeholder="seu.nome@ifbaiano.edu.br" 
+                  required
+                >
+              </div>
+              <div class="form-text text-muted" style="font-size: 0.72rem;">Use seu e-mail do IF Baiano para vínculo com o campus.</div>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-sm-6">
+                <label for="registerPassword" class="form-label small fw-semibold">Senha</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-transparent"><i class="bi bi-shield-lock text-muted"></i></span>
+                  <input 
+                    type="password" 
+                    class="form-control" 
+                    id="registerPassword" 
+                    placeholder="Mínimo 6 dígitos" 
+                    minlength="6"
+                    required
+                  >
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <label for="registerPasswordConfirm" class="form-label small fw-semibold">Confirmar Senha</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-transparent"><i class="bi bi-shield-check text-muted"></i></span>
+                  <input 
+                    type="password" 
+                    class="form-control" 
+                    id="registerPasswordConfirm" 
+                    placeholder="Repita a senha" 
+                    minlength="6"
+                    required
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="registerTerms" required checked>
+              <label class="form-check-label small text-muted" for="registerTerms" style="font-size: 0.75rem;">
+                Concordo com os princípios de convivência e uso responsável do mural acadêmico.
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-footer border-top py-3 px-4 bg-body-tertiary d-flex justify-content-between">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold" id="btnRegisterSubmit">
+              <i class="bi bi-check-lg me-1"></i>Criar Conta e Entrar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <!-- RODAPÉ -->
   <footer class="rodape py-4 border-top">
@@ -354,6 +459,58 @@
       }
     }
 
+    // Cadastro de Novo Usuário
+    async function fazerCadastro(evento) {
+      evento.preventDefault();
+      const nome = document.getElementById('registerName').value.trim();
+      const email = document.getElementById('registerEmail').value.trim();
+      const senha = document.getElementById('registerPassword').value.trim();
+      const confirmacao = document.getElementById('registerPasswordConfirm').value.trim();
+      const botao = document.getElementById('btnRegisterSubmit');
+      const caixaAlerta = document.getElementById('registerAlert');
+      const mensagemAlerta = document.getElementById('registerAlertMessage');
+
+      caixaAlerta.classList.add('d-none');
+
+      if (senha !== confirmacao) {
+        caixaAlerta.classList.remove('d-none');
+        mensagemAlerta.textContent = 'As senhas digitadas não coincidem. Verifique e tente novamente.';
+        return;
+      }
+
+      if (senha.length < 6) {
+        caixaAlerta.classList.remove('d-none');
+        mensagemAlerta.textContent = 'A senha deve conter no mínimo 6 caracteres.';
+        return;
+      }
+
+      botao.disabled = true;
+      botao.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Cadastrando...';
+
+      try {
+        const resposta = await servicoApi.cadastrarUsuario(nome, email, senha);
+        // Salva os dados do usuário autenticado no navegador
+        localStorage.setItem('ifdashboard_user', JSON.stringify(resposta.user));
+        
+        // Redireciona para o mural
+        window.location.href = 'index.html';
+      } catch (erro) {
+        console.warn('Erro no cadastro:', erro);
+        if (erro.message.includes('Failed to fetch') || erro.message.includes('NetworkError')) {
+          // Fallback para demonstração se a API estiver offline
+          const usuarioDemo = { id: Date.now(), name: nome, email: email, role: 'student' };
+          localStorage.setItem('ifdashboard_user', JSON.stringify(usuarioDemo));
+          window.location.href = 'index.html';
+        } else {
+          caixaAlerta.classList.remove('d-none');
+          mensagemAlerta.textContent = erro.message || 'Erro ao realizar cadastro.';
+        }
+      } finally {
+        botao.disabled = false;
+        botao.innerHTML = '<i class="bi bi-check-lg me-1"></i>Criar Conta e Entrar';
+      }
+    }
+
     // Aplicar tema (Claro / Escuro)
     function aplicarTema(tema) {
       document.documentElement.setAttribute('data-bs-theme', tema);
@@ -384,6 +541,8 @@
     window.togglePasswordVisibility = alternarVisibilidadeSenha;
     window.handleEmailLogin = fazerLoginEmail;
     window.handleGuestLogin = fazerLoginVisitante;
+    window.handleRegister = fazerCadastro;
+    window.fazerCadastro = fazerCadastro;
     window.applyTheme = aplicarTema;
   </script>
 </body>

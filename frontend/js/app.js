@@ -456,9 +456,12 @@ function abrirModalDetalhes(idPublicacao) {
   const publicacao = listaPublicacoes.find(p => p.id === idPublicacao);
   if (!publicacao) return;
 
+  idPublicacaoAtualDetalhes = publicacao.id;
+
   const configCategoria = MAPA_CATEGORIAS[publicacao.category] || { label: 'Aviso', class: 'badge-secondary' };
   const ehAchados = publicacao.category === 'achados';
   const foiCurtido = publicacoesCurtidas.has(publicacao.id);
+  const foiSalvo = publicacoesSalvas.has(publicacao.id);
 
   // Categoria e Subtipo
   const elementoBadge = document.getElementById('postModalBadge');
@@ -537,6 +540,20 @@ function abrirModalDetalhes(idPublicacao) {
     }
   }
 
+  // Botão de Salvar no Modal
+  const botaoSalvar = document.getElementById('postModalSaveBtn');
+  const iconeSalvar = document.getElementById('postModalSaveIcon');
+  const textoSalvar = document.getElementById('postModalSaveText');
+  if (botaoSalvar) {
+    botaoSalvar.className = `btn ${foiSalvo ? 'btn-warning text-dark' : 'btn-outline-warning text-dark'} d-flex align-items-center gap-2`;
+  }
+  if (iconeSalvar) {
+    iconeSalvar.className = `bi ${foiSalvo ? 'bi-bookmark-fill' : 'bi-bookmark'}`;
+  }
+  if (textoSalvar) {
+    textoSalvar.textContent = foiSalvo ? 'Salvo' : 'Salvar';
+  }
+
   // Curtidas: Não permitir em Achados e Perdidos
   const containerCurtidas = document.getElementById('postModalLikesContainer');
   const botaoCurtir = document.getElementById('postModalLikeBtn');
@@ -581,6 +598,7 @@ async function curtirNoModal(idPublicacao) {
     } else {
       publicacoesCurtidas.add(idPublicacao);
     }
+    localStorage.setItem('ifdashboard_liked_posts', JSON.stringify(Array.from(publicacoesCurtidas)));
     publicacao.likes_count = resultado.likes_count;
 
     // Atualizar visual do modal
@@ -596,7 +614,11 @@ async function curtirNoModal(idPublicacao) {
     if (textoCurtir) textoCurtir.textContent = estaCurtidoAgora ? 'Curtido' : 'Curtir';
 
     // Atualiza também os cards na página
-    renderizarPublicacoes(listaPublicacoes);
+    if (abaAtual === 'perfil') {
+      renderizarPerfil(abaPerfilAtual);
+    } else {
+      renderizarPublicacoes(listaPublicacoes);
+    }
   } catch (erro) {
     console.error('Erro ao curtir post no modal:', erro);
   }
@@ -677,8 +699,16 @@ async function enviarNovaPublicacao(evento) {
   }
 
   try {
-    await servicoApi.criarPublicacao(dadosFormulario);
+    const respostaCriacao = await servicoApi.criarPublicacao(dadosFormulario);
+    if (respostaCriacao && respostaCriacao.post && respostaCriacao.post.id) {
+      publicacoesMinhas.add(respostaCriacao.post.id);
+      localStorage.setItem('ifdashboard_my_posts', JSON.stringify(Array.from(publicacoesMinhas)));
+    }
     
+    // Adicionar notificação no perfil
+    const tituloPub = document.getElementById('postTitle').value.trim();
+    adicionarNotificacao('Publicação criada', `Sua publicação "${tituloPub}" foi postada com sucesso no mural.`, 'bi-check-circle-fill text-success');
+
     // Fechar modal e resetar formulário
     const elementoModal = document.getElementById('newPostModal');
     const instanciaModal = bootstrap.Modal.getInstance(elementoModal);
@@ -688,6 +718,9 @@ async function enviarNovaPublicacao(evento) {
 
     exibirAlerta('Publicação criada com sucesso!', 'success');
     await carregarPublicacoes();
+    if (abaAtual === 'perfil') {
+      renderizarPerfil(abaPerfilAtual);
+    }
   } catch (erro) {
     exibirAlerta('Falha ao criar publicação: ' + erro.message, 'danger');
   } finally {
@@ -715,6 +748,12 @@ async function aoCurtir(idPublicacao, botao) {
     } else {
       publicacoesCurtidas.add(idPublicacao);
     }
+    localStorage.setItem('ifdashboard_liked_posts', JSON.stringify(Array.from(publicacoesCurtidas)));
+    
+    // Atualizar no objeto da lista em memória também
+    const postObj = listaPublicacoes.find(p => p.id === idPublicacao);
+    if (postObj) postObj.likes_count = resultado.likes_count;
+
     const spanContador = botao.querySelector('.contador-curtidas');
     if (spanContador) spanContador.textContent = resultado.likes_count;
     
@@ -723,6 +762,10 @@ async function aoCurtir(idPublicacao, botao) {
     const icone = botao.querySelector('i');
     if (icone) {
       icone.className = !foiCurtido ? 'bi bi-heart-fill' : 'bi bi-heart';
+    }
+
+    if (abaAtual === 'perfil') {
+      renderizarPerfil(abaPerfilAtual);
     }
   } catch (erro) {
     console.error('Erro ao curtir post:', erro);
@@ -1073,11 +1116,281 @@ async function salvarNovoEvento(evento) {
 }
 
 /* ============================================================
+   LÓGICA DO MEU PERFIL (MINHAS PUBLICAÇÕES, SALVOS, CURTIDAS, NOTIFICAÇÕES)
+============================================================ */
+
+// Alternar salvar/favoritar publicação
+function alternarSalvar(idPublicacao, botao) {
+  const foiSalvo = publicacoesSalvas.has(idPublicacao);
+  if (foiSalvo) {
+    publicacoesSalvas.delete(idPublicacao);
+  } else {
+    publicacoesSalvas.add(idPublicacao);
+    adicionarNotificacao('Item Salvo', 'Uma publicação foi adicionada aos seus itens salvos.', 'bi-bookmark-check-fill text-warning');
+  }
+
+  localStorage.setItem('ifdashboard_saved_posts', JSON.stringify(Array.from(publicacoesSalvas)));
+
+  // Atualizar visual do botão acionado
+  if (botao) {
+    const estaSalvoAgora = publicacoesSalvas.has(idPublicacao);
+    botao.classList.toggle('btn-warning', estaSalvoAgora);
+    botao.classList.toggle('text-dark', estaSalvoAgora);
+    botao.classList.toggle('btn-outline-secondary', !estaSalvoAgora);
+    const icone = botao.querySelector('i');
+    if (icone) {
+      icone.className = estaSalvoAgora ? 'bi bi-bookmark-fill' : 'bi bi-bookmark';
+    }
+    botao.title = estaSalvoAgora ? 'Remover dos salvos' : 'Salvar publicação';
+  }
+
+  // Atualizar também modal se estiver aberto com esta publicação
+  if (idPublicacaoAtualDetalhes === idPublicacao) {
+    const estaSalvoAgora = publicacoesSalvas.has(idPublicacao);
+    const bSalvar = document.getElementById('postModalSaveBtn');
+    const iSalvar = document.getElementById('postModalSaveIcon');
+    const tSalvar = document.getElementById('postModalSaveText');
+    if (bSalvar) bSalvar.className = `btn ${estaSalvoAgora ? 'btn-warning text-dark' : 'btn-outline-warning text-dark'} d-flex align-items-center gap-2`;
+    if (iSalvar) iSalvar.className = `bi ${estaSalvoAgora ? 'bi-bookmark-fill' : 'bi-bookmark'}`;
+    if (tSalvar) tSalvar.textContent = estaSalvoAgora ? 'Salvo' : 'Salvar';
+  }
+
+  // Se estiver na tela de perfil, re-renderiza
+  if (abaAtual === 'perfil') {
+    renderizarPerfil(abaPerfilAtual);
+  }
+}
+
+// Alternar salvar a partir do modal de detalhes
+function aoSalvarNoModal() {
+  if (idPublicacaoAtualDetalhes) {
+    alternarSalvar(idPublicacaoAtualDetalhes, null);
+  }
+}
+
+// Trocar de aba dentro do Meu Perfil
+function mudarAbaPerfil(aba) {
+  abaPerfilAtual = aba;
+  document.querySelectorAll('#perfilTabs button').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-perfil-aba') === aba);
+  });
+  renderizarPerfil(aba);
+}
+
+// Renderizar o conteúdo do Meu Perfil
+function renderizarPerfil(aba = 'meus') {
+  const container = document.getElementById('perfilContent');
+  if (!container) return;
+
+  const usuarioJson = localStorage.getItem('ifdashboard_user');
+  let usuario = null;
+  if (usuarioJson) {
+    try { usuario = JSON.parse(usuarioJson); } catch (e) {}
+  }
+  const nomeUsuario = usuario?.name || '';
+
+  // 1. Filtrar Minhas Publicações
+  const minhasPublicacoes = listaPublicacoes.filter(p => {
+    return publicacoesMinhas.has(p.id) || (nomeUsuario && p.author === nomeUsuario);
+  });
+
+  // 2. Filtrar Itens Salvos
+  const salvosPublicacoes = listaPublicacoes.filter(p => publicacoesSalvas.has(p.id));
+
+  // 3. Filtrar Curtidas
+  const curtidasPublicacoes = listaPublicacoes.filter(p => publicacoesCurtidas.has(p.id));
+
+  // 4. Notificações não lidas
+  const naoLidasCount = notificacoesUsuario.filter(n => !n.lida).length;
+
+  // Atualizar contadores nos botões
+  const elMeus = document.getElementById('countMeus');
+  const elSalvos = document.getElementById('countSalvos');
+  const elCurtidos = document.getElementById('countCurtidos');
+  const elNotif = document.getElementById('countNotificacoes');
+  if (elMeus) elMeus.textContent = minhasPublicacoes.length;
+  if (elSalvos) elSalvos.textContent = salvosPublicacoes.length;
+  if (elCurtidos) elCurtidos.textContent = curtidasPublicacoes.length;
+  if (elNotif) elNotif.textContent = naoLidasCount;
+
+  // RENDERIZAÇÃO DA ABA NOTIFICAÇÕES
+  if (aba === 'notificacoes') {
+    if (!notificacoesUsuario || notificacoesUsuario.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state-perfil">
+          <i class="bi bi-bell-slash fs-1 text-muted"></i>
+          <h5 class="fw-bold mt-3 mb-1">Nenhuma notificação</h5>
+          <p class="text-muted small">Você não tem notificações recentes no momento.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="text-muted small fw-semibold">Notificações e Avisos Pessoais</span>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary py-1" onclick="marcarNotificacoesComoLidas()">
+            <i class="bi bi-check2-all me-1"></i>Marcar todas como lidas
+          </button>
+          <button class="btn btn-sm btn-outline-danger py-1" onclick="limparNotificacoes()">
+            <i class="bi bi-trash me-1"></i>Limpar
+          </button>
+        </div>
+      </div>
+      <div class="d-flex flex-column gap-2">
+        ${notificacoesUsuario.map(n => `
+          <div class="card-notificacao ${!n.lida ? 'nao-lida' : ''} d-flex align-items-start gap-3">
+            <i class="bi ${n.icone || 'bi-bell-fill text-primary'} fs-4 mt-1"></i>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-bold text-body">${escaparHTML(n.titulo)}</span>
+                <small class="text-muted">${escaparHTML(n.data || 'Hoje')}</small>
+              </div>
+              <p class="text-muted small mb-0">${escaparHTML(n.mensagem)}</p>
+            </div>
+            ${!n.lida ? '<span class="badge bg-primary rounded-pill p-1" title="Não lida">●</span>' : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+    return;
+  }
+
+  // RENDERIZAÇÃO DE MINHAS PUBLICAÇÕES, SALVOS OU CURTIDAS
+  let listaAlvo = [];
+  let mensagemVazia = '';
+  let iconeVazio = '';
+  let dicaVazia = '';
+
+  if (aba === 'meus') {
+    listaAlvo = minhasPublicacoes;
+    iconeVazio = 'bi-journal-x';
+    mensagemVazia = 'Nenhuma publicação criada ainda';
+    dicaVazia = 'Você ainda não publicou nenhum aviso, achado ou serviço no mural.';
+  } else if (aba === 'salvos') {
+    listaAlvo = salvosPublicacoes;
+    iconeVazio = 'bi-bookmark-x';
+    mensagemVazia = 'Nenhum item salvo';
+    dicaVazia = 'Para salvar publicações importantes, clique no ícone de marcador presente nos cards.';
+  } else if (aba === 'curtidos') {
+    listaAlvo = curtidasPublicacoes;
+    iconeVazio = 'bi-heartbreak';
+    mensagemVazia = 'Nenhuma publicação curtida';
+    dicaVazia = 'Publicações que você curtir no mural ficarão reunidas aqui para fácil consulta.';
+  }
+
+  if (listaAlvo.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state-perfil">
+        <i class="bi ${iconeVazio} fs-1 text-muted"></i>
+        <h5 class="fw-bold mt-3 mb-1">${mensagemVazia}</h5>
+        <p class="text-muted small mb-3">${dicaVazia}</p>
+        ${aba === 'meus' ? `
+          <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#newPostModal">
+            <i class="bi bi-plus-lg me-1"></i>Criar Publicação Agora
+          </button>
+        ` : `
+          <button class="btn btn-outline-secondary btn-sm px-3" onclick="navegar('home')">
+            <i class="bi bi-arrow-left me-1"></i>Explorar Mural do Campus
+          </button>
+        `}
+      </div>
+    `;
+    return;
+  }
+
+  // Renderizar o grid com os cards da lista
+  container.innerHTML = `
+    <div class="row g-3">
+      ${listaAlvo.map(post => {
+        const configCategoria = MAPA_CATEGORIAS[post.category] || { label: 'Aviso', class: 'badge-secondary', pin: 'pino-editais' };
+        const foiCurtido = publicacoesCurtidas.has(post.id);
+        const foiSalvo = publicacoesSalvas.has(post.id);
+        const ehAchados = post.category === 'achados';
+
+        return `
+          <div class="col-md-6 col-xl-4">
+            <div class="card card-mural h-100 p-3 shadow-sm" onclick="abrirModalDetalhes(${post.id})" title="Clique para ver detalhes">
+              <span class="indicador-pino ${configCategoria.pin}"></span>
+              
+              ${post.image_url ? `
+                <div class="card-mural-imagem mb-2 rounded-3 overflow-hidden border">
+                  <img src="${escaparHTML(post.image_url)}" alt="${escaparHTML(post.title)}" class="w-100 object-fit-cover" style="height: 140px;" loading="lazy">
+                </div>
+              ` : ''}
+
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge ${configCategoria.class} rounded-pill px-2 py-1">${configCategoria.label}</span>
+                ${post.sub_type ? `<span class="badge bg-body-secondary text-body border">${post.sub_type}</span>` : ''}
+              </div>
+
+              <h5 class="card-title fw-bold fs-6 mb-2">${escaparHTML(post.title)}</h5>
+              <p class="card-text text-muted small flex-grow-1">${escaparHTML(post.description)}</p>
+
+              ${post.price ? `<div class="fw-bold text-success mb-2">${escaparHTML(post.price)}</div>` : ''}
+
+              <div class="d-flex justify-content-between align-items-center pt-2 mt-2 border-top text-muted small">
+                <span><i class="bi bi-geo-alt me-1"></i>${escaparHTML(post.location || 'Campus Lapa')}</span>
+                
+                <div class="d-flex align-items-center gap-2">
+                  <button class="btn btn-sm ${foiSalvo ? 'btn-warning text-dark' : 'btn-outline-secondary'} py-0 px-2" onclick="event.stopPropagation(); alternarSalvar(${post.id}, this)" title="${foiSalvo ? 'Remover dos salvos' : 'Salvar'}">
+                    <i class="bi ${foiSalvo ? 'bi-bookmark-fill' : 'bi-bookmark'}"></i>
+                  </button>
+
+                  ${!ehAchados ? `
+                    <button class="btn btn-sm ${foiCurtido ? 'btn-danger' : 'btn-outline-danger'} py-0 px-2" onclick="event.stopPropagation(); aoCurtir(${post.id}, this)" title="Curtir">
+                      <i class="bi ${foiCurtido ? 'bi-heart-fill' : 'bi-heart'}"></i>
+                      <span class="contador-curtidas">${post.likes_count || 0}</span>
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// Adicionar uma nova notificação
+function adicionarNotificacao(titulo, mensagem, icone = 'bi-bell-fill text-primary') {
+  const nova = {
+    id: Date.now(),
+    titulo,
+    mensagem,
+    icone,
+    data: 'Agora',
+    lida: false
+  };
+  notificacoesUsuario.unshift(nova);
+  localStorage.setItem('ifdashboard_notifications', JSON.stringify(notificacoesUsuario));
+}
+
+// Marcar todas notificações como lidas
+function marcarNotificacoesComoLidas() {
+  notificacoesUsuario.forEach(n => n.lida = true);
+  localStorage.setItem('ifdashboard_notifications', JSON.stringify(notificacoesUsuario));
+  renderizarPerfil('notificacoes');
+}
+
+// Limpar lista de notificações
+function limparNotificacoes() {
+  notificacoesUsuario = [];
+  localStorage.setItem('ifdashboard_notifications', JSON.stringify([]));
+  renderizarPerfil('notificacoes');
+}
+
+/* ============================================================
    ALIASES PARA COMPATIBILIDADE TOTAL (GLOBAL SCOPE)
 ============================================================ */
 window.currentView = abaAtual;
 window.currentSort = tipoOrdenacao;
 window.likedPosts = publicacoesCurtidas;
+window.savedPosts = publicacoesSalvas;
+window.myPosts = publicacoesMinhas;
+window.userNotifications = notificacoesUsuario;
 window.currentPostsList = listaPublicacoes;
 window.CATEGORY_MAP = MAPA_CATEGORIAS;
 window.CAL_MONTHS = MESES_ANO;
@@ -1123,5 +1436,17 @@ window.renderDestaques = renderizarDestaques;
 window.goToDestaqueSlide = irParaSlideDestaque;
 window.irParaSlideDestaque = irParaSlideDestaque;
 window.rolarParaMural = rolarParaMural;
+
+window.alternarSalvar = alternarSalvar;
+window.toggleSave = alternarSalvar;
+window.aoSalvarNoModal = aoSalvarNoModal;
+window.handleModalSave = aoSalvarNoModal;
+window.mudarAbaPerfil = mudarAbaPerfil;
+window.changeProfileTab = mudarAbaPerfil;
+window.renderizarPerfil = renderizarPerfil;
+window.renderProfile = renderizarPerfil;
+window.adicionarNotificacao = adicionarNotificacao;
+window.marcarNotificacoesComoLidas = marcarNotificacoesComoLidas;
+window.limparNotificacoes = limparNotificacoes;
 
 

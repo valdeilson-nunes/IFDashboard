@@ -115,6 +115,18 @@ const servicoApi = {
     return dados;
   },
 
+  // Cadastrar Novo Usuário
+  async cadastrarUsuario(nome, email, senha) {
+    const resposta = await fetch(`${URL_BASE_API}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: nome, email: email, password: senha })
+    });
+    const dados = await resposta.json();
+    if (!resposta.ok) throw new Error(dados.error || 'Falha ao cadastrar usuário.');
+    return dados;
+  },
+
   // Entrar como Visitante
   async entrarComoVisitante() {
     const resposta = await fetch(`${URL_BASE_API}/auth/guest`, {
@@ -137,6 +149,7 @@ servicoApi.getEvents = servicoApi.obterEventos;
 servicoApi.createEvent = servicoApi.criarEvento;
 servicoApi.checkHealth = servicoApi.verificarStatus;
 servicoApi.login = servicoApi.fazerLogin;
+servicoApi.register = servicoApi.cadastrarUsuario;
 servicoApi.loginAsGuest = servicoApi.entrarComoVisitante;
 
 const api = servicoApi;
