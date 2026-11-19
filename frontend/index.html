@@ -39,7 +39,7 @@
       </div>
 
       <div class="d-flex align-items-center gap-2 ms-auto">
-        <button class="btn btn-primary d-flex align-items-center gap-2 px-3" data-bs-toggle="modal" data-bs-target="#newPostModal">
+        <button class="btn btn-primary d-flex align-items-center gap-2 px-3" id="btnHeaderPublicar" onclick="aoClicarPublicar()">
           <i class="bi bi-plus-lg"></i>
           <span class="d-none d-sm-inline">Publicar</span>
         </button>
@@ -51,7 +51,7 @@
     </div>
   </header>
 
-  <!-- MENU LATERAL MODAL (OFFCANVAS FLUTUANTE QUE NÃO ALTERA O ESPAÇO DA PÁGINA) -->
+  <!-- MENU LATERAL MODAL -->
   <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
     <div class="offcanvas-header border-bottom py-3 px-4">
       <div class="d-flex align-items-center gap-2">
@@ -74,10 +74,13 @@
         </div>
       </div>
 
-      <!-- Links de Navegação com Ícones e Destaque -->
+      <!-- Links de Navegação -->
       <div class="list-group list-group-flush nav-lateral">
         <a href="#" class="list-group-item list-group-item-action active py-3" data-nav="home" onclick="navegar('home')">
           <i class="bi bi-grid-fill me-3 fs-5"></i> Mural do Campus
+        </a>
+        <a href="#" class="list-group-item list-group-item-action py-3 d-none" id="navUsuariosItem" data-nav="usuarios" onclick="navegar('usuarios')">
+          <i class="bi bi-people-fill me-3 fs-5 text-primary"></i> Usuários
         </a>
         <a href="#" class="list-group-item list-group-item-action py-3" data-nav="achados" onclick="navegar('achados')">
           <i class="bi bi-search-heart me-3 fs-5" style="color:var(--color-tangerine)"></i> Achados e Perdidos
@@ -87,6 +90,7 @@
         </a>
         <a href="#" class="list-group-item list-group-item-action py-3" data-nav="pesquisa" onclick="navegar('pesquisa')">
           <i class="bi bi-mortarboard-fill me-3 fs-5" style="color:var(--color-cobalt)"></i> Pesquisa e Extensão
+        </a>
         <a href="#" class="list-group-item list-group-item-action py-3" data-nav="editais" onclick="navegar('editais')">
           <i class="bi bi-file-earmark-text-fill me-3 fs-5" style="color:var(--color-marigold)"></i> Editais
         </a>
@@ -105,15 +109,14 @@
     <!-- Rodapé do Menu Drawer -->
     <div class="p-3 border-top bg-body-tertiary">
       <button class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2" onclick="fazerLogout()">
-        <i class="bi bi-box-arrow-right"></i> Sair para a Landing Page
+        <i class="bi bi-box-arrow-right"></i> Sair
       </button>
     </div>
   </div>
 
-  <!-- LAYOUT PRINCIPAL: CONTEÚDO OCUPA 100% DA LARGURA (SEM MUDANÇA DE ESPAÇO) -->
+  <!-- LAYOUT PRINCIPAL -->
   <div class="container-fluid px-3 px-lg-4 py-4">
     <div class="row">
-      <!-- ÁREA DE CONTEÚDO PRINCIPAL -->
       <main class="col-12">
         
         <!-- CABEÇALHO DA SEÇÃO ATUAL -->
@@ -123,7 +126,7 @@
             <p class="text-muted small mb-0" id="sectionSubtitle">Avisos oficiais, achados, serviços e oportunidades da comunidade acadêmica.</p>
           </div>
 
-          <!-- Filtros de Ordenação / Filtros rápidos -->
+          <!-- Filtros de Ordenação -->
           <div class="btn-group mt-2 mt-sm-0" role="group" id="sortFilterGroup">
             <button type="button" class="btn btn-outline-secondary btn-sm active" data-sort="recent" onclick="definirOrdenacao('recent')">Recentes</button>
             <button type="button" class="btn btn-outline-secondary btn-sm" data-sort="likes" onclick="definirOrdenacao('likes')">Mais curtidos</button>
@@ -136,7 +139,7 @@
           <button type="button" class="btn-close" onclick="ocultarAlerta()" aria-label="Close"></button>
         </div>
 
-        <!-- DESTAQUES: CARROSSEL INSTITUCIONAL ESTILO PORTAL IF (apenas na aba home) -->
+        <!-- DESTAQUES: CARROSSEL INSTITUCIONAL (apenas na aba home) -->
         <div id="destaquesView" class="mb-4 pb-2 border-bottom d-none">
           <div class="mb-2">
             <span class="destaque-cabecalho fw-bold small text-uppercase">
@@ -145,18 +148,12 @@
           </div>
 
           <div class="row g-3 align-items-stretch">
-            <!-- Card Principal Maior (Slide com alternância automática) -->
             <div class="col-lg-8">
-              <div class="card-destaque-principal position-relative rounded-3 overflow-hidden shadow-sm" id="cardDestaquePrincipal">
-                <!-- Conteúdo do slide ativo inserido dinamicamente via JS -->
-              </div>
+              <div class="card-destaque-principal position-relative rounded-3 overflow-hidden shadow-sm" id="cardDestaquePrincipal"></div>
             </div>
 
-            <!-- Lista Lateral de Notícias Rápidas -->
             <div class="col-lg-4 d-flex flex-column justify-content-between">
-              <div class="destaques-lista-lateral" id="destaquesListaLateral">
-                <!-- Manchetes das outras notícias do carrossel via JS -->
-              </div>
+              <div class="destaques-lista-lateral" id="destaquesListaLateral"></div>
               <div class="pt-2">
                 <a href="#postsContainer" class="btn btn-sm btn-sucesso-if px-3 fw-bold" onclick="rolarParaMural(event)">
                   + notícias
@@ -169,7 +166,6 @@
         <!-- MURAL / FEED VIEW (POSTS) -->
         <div id="postsView">
           <div class="row g-3" id="postsContainer">
-            <!-- Cards carregados dinamicamente via JS -->
             <div class="col-12 text-center py-5 text-muted">
               <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Carregando...</span>
@@ -182,12 +178,8 @@
         <!-- CALENDÁRIO INTERATIVO VIEW -->
         <div id="calendarView" class="d-none">
           <div class="row g-4">
-            
-            <!-- COLUNA PRINCIPAL: GRID DO CALENDÁRIO -->
             <div class="col-xl-8">
               <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 card-calendario">
-                
-                <!-- HEADER DO MÊS / CONTROLES DE NAVEGAÇÃO -->
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-3 border-bottom gap-2">
                   <div class="d-flex align-items-center gap-2">
                     <h3 class="h4 fw-bold mb-0" id="calMonthLabel" style="font-family: var(--font-display);">Novembro 2026</h3>
@@ -206,41 +198,25 @@
                         <i class="bi bi-chevron-right"></i>
                       </button>
                     </div>
-                    <button class="btn btn-primary btn-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#newEventModal">
+                    <button class="btn btn-primary btn-sm d-flex align-items-center gap-1" id="btnNovoEventoTopo" onclick="aoClicarNovoEvento()">
                       <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Novo Evento</span>
                     </button>
                   </div>
                 </div>
 
-                <!-- CABEÇALHO DOS DIAS DA SEMANA E GRID MENSAL -->
-                <div class="grade-calendario" id="calGrid">
-                  <!-- Renderizado dinamicamente via JS -->
-                </div>
+                <div class="grade-calendario" id="calGrid"></div>
 
-                <!-- LEGENDA DE CORES DAS CATEGORIAS -->
                 <div class="legenda-cal d-flex flex-wrap align-items-center gap-3 mt-3 pt-3 border-top small text-muted">
                   <span class="fw-semibold text-body">Categorias:</span>
-                  <span class="d-inline-flex align-items-center gap-1">
-                    <span class="indicador-ponto-cal pino-achados"></span> Achados e Perdidos
-                  </span>
-                  <span class="d-inline-flex align-items-center gap-1">
-                    <span class="indicador-ponto-cal pino-servicos"></span> Serviços e Vendas
-                  </span>
-                  <span class="d-inline-flex align-items-center gap-1">
-                    <span class="indicador-ponto-cal pino-pesquisa"></span> Pesquisa e Extensão
-                  </span>
-                  <span class="d-inline-flex align-items-center gap-1">
-                    <span class="indicador-ponto-cal pino-editais"></span> Editais
-                  </span>
-                  <span class="d-inline-flex align-items-center gap-1">
-                    <span class="indicador-ponto-cal pino-avisos"></span> Avisos
-                  </span>
+                  <span class="d-inline-flex align-items-center gap-1"><span class="indicador-ponto-cal pino-achados"></span> Achados e Perdidos</span>
+                  <span class="d-inline-flex align-items-center gap-1"><span class="indicador-ponto-cal pino-servicos"></span> Serviços e Vendas</span>
+                  <span class="d-inline-flex align-items-center gap-1"><span class="indicador-ponto-cal pino-pesquisa"></span> Pesquisa e Extensão</span>
+                  <span class="d-inline-flex align-items-center gap-1"><span class="indicador-ponto-cal pino-editais"></span> Editais</span>
+                  <span class="d-inline-flex align-items-center gap-1"><span class="indicador-ponto-cal pino-avisos"></span> Avisos</span>
                 </div>
-
               </div>
             </div>
 
-            <!-- COLUNA LATERAL: AGENDA DO DIA SELECIONADO -->
             <div class="col-xl-4">
               <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 card-agenda sticky-top" style="top: 85px;">
                 <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
@@ -251,25 +227,47 @@
                   <span class="badge bg-primary text-white rounded-pill px-2" id="agendaEventsCount">0</span>
                 </div>
 
-                <!-- LISTA DE EVENTOS DO DIA -->
-                <div id="agendaList" class="d-flex flex-column gap-2 overflow-auto" style="max-height: 480px;">
-                  <!-- Carregado via JS -->
-                </div>
+                <div id="agendaList" class="d-flex flex-column gap-2 overflow-auto" style="max-height: 480px;"></div>
 
                 <div class="mt-3 pt-3 border-top text-center">
-                  <button class="btn btn-outline-primary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#newEventModal">
+                  <button class="btn btn-outline-primary btn-sm w-100" id="btnAgendarAgenda" onclick="aoClicarNovoEvento()">
                     <i class="bi bi-calendar-plus me-1"></i> Agendar evento nesta data
                   </button>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
 
-        <!-- MEU PERFIL VIEW (MINHAS PUBLICAÇÕES, ITENS SALVOS, CURTIDAS, NOTIFICAÇÕES) -->
+        <!-- GESTÃO DE USUÁRIOS VIEW (ADMINISTRADOR & DESENVOLVEDOR) -->
+        <div id="usuariosView" class="d-none">
+          <div class="card border-0 shadow-sm rounded-4 p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+              <div>
+                <h5 class="fw-bold mb-0">Usuários Cadastrados</h5>
+                <small class="text-muted">Clique em "Gerenciar" para editar informações cadastrais, nível de acesso ou visualizar os posts do usuário.</small>
+              </div>
+              <input type="text" id="userSearchInput" class="form-control form-control-sm" style="max-width: 280px;" placeholder="Filtrar por nome ou e-mail..." oninput="filtrarTabelaUsuarios()">
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Perfil</th>
+                    <th>Publicações</th>
+                    <th class="text-end">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="usuariosTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- MEU PERFIL VIEW -->
         <div id="perfilView" class="d-none">
-          <!-- Card de Apresentação do Perfil -->
           <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 card-perfil-header">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
               <div class="d-flex align-items-center gap-3">
@@ -280,14 +278,13 @@
                 </div>
               </div>
               <div class="d-flex flex-wrap gap-2">
-                <button class="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3" data-bs-toggle="modal" data-bs-target="#newPostModal">
+                <button class="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3" onclick="aoClicarPublicar()">
                   <i class="bi bi-plus-lg"></i> Nova Publicação
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- Barra de Abas / Chips do Perfil (Estilo Protótipo) -->
           <div class="d-flex flex-wrap gap-2 mb-4" id="perfilTabs">
             <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1 active" data-perfil-aba="meus" onclick="mudarAbaPerfil('meus')">
               <i class="bi bi-card-text me-1"></i>Minhas Publicações <span class="badge bg-secondary rounded-pill ms-1" id="countMeus">0</span>
@@ -303,10 +300,7 @@
             </button>
           </div>
 
-          <!-- Container do Conteúdo do Perfil -->
-          <div id="perfilContent">
-            <!-- Renderizado dinamicamente via JS -->
-          </div>
+          <div id="perfilContent"></div>
         </div>
 
       </main>
@@ -323,7 +317,6 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            
             <div class="mb-3">
               <label for="postCategory" class="form-label">Categoria</label>
               <select class="form-select" id="postCategory" required onchange="aoMudarCategoria()">
@@ -335,7 +328,6 @@
               </select>
             </div>
 
-            <!-- Campos Condicionais: Achados -->
             <div class="mb-3" id="conditionalAchados">
               <label for="postSubTypeAchados" class="form-label">Situação</label>
               <select class="form-select" id="postSubTypeAchados">
@@ -344,7 +336,6 @@
               </select>
             </div>
 
-            <!-- Campos Condicionais: Serviços/Vendas -->
             <div class="row g-2 mb-3 d-none" id="conditionalServicos">
               <div class="col-md-6">
                 <label for="postSubTypeServicos" class="form-label">Tipo de Anúncio</label>
@@ -360,7 +351,6 @@
               </div>
             </div>
 
-            <!-- Campos Condicionais: Pesquisa e Extensão / Editais e Avisos (Período no Calendário) -->
             <div class="row g-2 mb-3 d-none" id="conditionalPeriodo">
               <div class="col-md-6">
                 <label for="postStartDate" class="form-label">Data de Início</label>
@@ -398,7 +388,6 @@
               </div>
             </div>
 
-            <!-- Anexo de Imagem (Carregar arquivo do usuário) -->
             <div class="mb-3">
               <label for="postImageFile" class="form-label small fw-semibold">
                 <i class="bi bi-image text-muted me-1"></i>Foto ou Imagem do Anúncio (Carregar do dispositivo)
@@ -406,7 +395,6 @@
               <input type="file" class="form-control" id="postImageFile" accept="image/png, image/jpeg, image/webp, image/gif" onchange="previsualizarImagem(event)">
               <div class="form-text text-muted small">Carregue uma imagem do seu dispositivo (PNG, JPG, WEBP até 16MB).</div>
               
-              <!-- Pré-visualização da imagem carregada com botão para remover -->
               <div id="postImagePreviewContainer" class="mt-2 position-relative d-none rounded-3 overflow-hidden border" style="max-height: 220px; background-color: var(--card-subtle);">
                 <img id="postImagePreview" src="" alt="Prévia da foto" class="w-100 object-fit-cover" style="max-height: 220px;">
                 <button type="button" class="btn btn-sm btn-dark position-absolute top-0 end-0 m-2 rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 32px; height: 32px;" onclick="limparUploadImagem()" title="Remover imagem">
@@ -414,11 +402,53 @@
                 </button>
               </div>
             </div>
-
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
             <button type="submit" class="btn btn-primary" id="btnSubmitPost">Publicar agora</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDITAR PUBLICAÇÃO -->
+  <div class="modal fade" id="editPostModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="editPostForm" onsubmit="salvarEdicaoPublicacao(event)">
+          <input type="hidden" id="editPostId">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-warning me-2"></i>Editar Publicação</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="editPostTitle" class="form-label">Título</label>
+              <input type="text" class="form-control" id="editPostTitle" required>
+            </div>
+            <div class="mb-3">
+              <label for="editPostDesc" class="form-label">Descrição</label>
+              <textarea class="form-control" id="editPostDesc" rows="3"></textarea>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-md-6">
+                <label for="editPostLocation" class="form-label">Local no Campus</label>
+                <input type="text" class="form-control" id="editPostLocation">
+              </div>
+              <div class="col-md-6">
+                <label for="editPostWpp" class="form-label">WhatsApp</label>
+                <input type="text" class="form-control" id="editPostWpp">
+              </div>
+            </div>
+            <div class="mb-3 d-none" id="editPostPriceContainer">
+              <label for="editPostPrice" class="form-label">Valor (R$)</label>
+              <input type="text" class="form-control" id="editPostPrice">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btnSaveEditPost">Salvar Alterações</button>
           </div>
         </form>
       </div>
@@ -441,30 +471,25 @@
         </div>
 
         <div class="modal-body p-4">
-          <!-- Imagem da Publicação (quando existir) -->
           <div id="postModalImageContainer" class="mb-4 text-center overflow-hidden rounded-4 border d-none" style="max-height: 400px; background-color: var(--card-subtle);">
             <img id="postModalImage" src="" alt="Imagem da publicação" class="img-fluid w-100 object-fit-cover" style="max-height: 400px;">
           </div>
 
           <h3 class="fw-bold mb-2" id="postModalTitle" style="font-family: var(--font-display);">Título</h3>
           
-          <!-- Metadados (Autor, Local, Data) -->
           <div class="d-flex flex-wrap align-items-center gap-3 text-muted small mb-3 pb-3 border-bottom">
             <span id="postModalAuthor"><i class="bi bi-person me-1"></i>Autor</span>
             <span id="postModalLocation"><i class="bi bi-geo-alt me-1"></i>Campus Lapa</span>
             <span id="postModalDate"><i class="bi bi-clock me-1"></i>Data</span>
           </div>
 
-          <!-- Preço / Prazo destacados -->
           <div id="postModalHighlight" class="mb-3 d-none"></div>
 
-          <!-- Descrição Completa -->
           <div class="mb-4">
             <h6 class="fw-bold text-muted small text-uppercase mb-2">Descrição</h6>
             <p class="text-body lh-base fs-6" id="postModalDesc" style="white-space: pre-line;">Descrição detalhada...</p>
           </div>
 
-            <!-- Ações (WhatsApp + Salvar + Curtidas) -->
           <div class="d-flex flex-wrap justify-content-between align-items-center pt-3 border-top gap-2">
             <div id="postModalWppContainer" class="d-none">
               <a id="postModalWppBtn" href="#" target="_blank" class="btn btn-success d-flex align-items-center gap-2 px-3">
@@ -474,13 +499,11 @@
             </div>
 
             <div class="d-flex align-items-center gap-2 ms-auto">
-              <!-- Botão de Salvar no Modal -->
               <button class="btn btn-outline-warning text-dark d-flex align-items-center gap-2" id="postModalSaveBtn" onclick="aoSalvarNoModal()">
                 <i class="bi bi-bookmark" id="postModalSaveIcon"></i>
                 <span id="postModalSaveText">Salvar</span>
               </button>
 
-              <!-- Curtidas: só exibe se NÃO for categoria achados -->
               <div id="postModalLikesContainer" class="d-flex align-items-center gap-2">
                 <button class="btn btn-outline-danger d-flex align-items-center gap-2" id="postModalLikeBtn">
                   <i class="bi bi-heart" id="postModalLikeIcon"></i>
@@ -492,9 +515,121 @@
           </div>
         </div>
         
-        <div class="modal-footer bg-body-tertiary">
-          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+        <div class="modal-footer bg-body-tertiary d-flex justify-content-between">
+          <div class="d-flex gap-2" id="postModalModerationActions"></div>
+          <button type="button" class="btn btn-outline-secondary btn-sm ms-auto" data-bs-dismiss="modal">Fechar</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GERENCIAR USUÁRIO (ADMINISTRADOR & DESENVOLVEDOR) -->
+  <div class="modal fade" id="adminUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="adminUserModalTitle">Gerenciar Usuário</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <ul class="nav nav-tabs mb-3" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="tabBtnUserInfo" data-bs-toggle="tab" data-bs-target="#tabUserInfo" type="button" role="tab">
+                <i class="bi bi-person-vcard me-1"></i>Informações Pessoais
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tabBtnUserPosts" data-bs-toggle="tab" data-bs-target="#tabUserPosts" type="button" role="tab">
+                <i class="bi bi-card-list me-1"></i>Posts (<span id="adminUserPostsCount">0</span>)
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+            <!-- Aba Informações Pessoais -->
+            <div class="tab-pane fade show active" id="tabUserInfo" role="tabpanel">
+              <form id="adminUserForm" onsubmit="salvarUsuarioAdmin(event)">
+                <input type="hidden" id="adminEditUserId">
+                <div class="mb-3">
+                  <label class="form-label small fw-semibold">Nome Completo</label>
+                  <input type="text" class="form-control" id="adminEditUserName" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label small fw-semibold">E-mail Institucional</label>
+                  <input type="email" class="form-control" id="adminEditUserEmail" required>
+                </div>
+                <div class="row g-2 mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label small fw-semibold">Nível de Acesso</label>
+                    <select class="form-select" id="adminEditUserRole">
+                      <option value="basico">Básico</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-semibold">Nova Senha <span class="text-muted">(opcional)</span></label>
+                    <input type="password" class="form-control" id="adminEditUserPassword" minlength="6" placeholder="Deixe em branco para manter">
+                  </div>
+                </div>
+                <div class="text-end">
+                  <button type="submit" class="btn btn-primary btn-sm px-4" id="btnSaveAdminUser">Salvar Alterações</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Aba Posts do Usuário -->
+            <div class="tab-pane fade" id="tabUserPosts" role="tabpanel">
+              <div id="adminUserPostsList" class="d-flex flex-column gap-2" style="max-height: 360px; overflow-y: auto;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CADASTRO PARA CONVIDADOS / VISITANTES -->
+  <div class="modal fade" id="guestRegisterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+        <form id="guestRegisterForm" onsubmit="fazerCadastroVisitante(event)">
+          <div class="modal-header border-bottom py-3 px-4 bg-body-tertiary">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-person-plus-fill text-primary fs-4"></i>
+              <div>
+                <h5 class="modal-title fw-bold mb-0" style="font-family: var(--font-display);">Criar Conta no IFDashboard</h5>
+                <small class="text-muted" style="font-size: 0.75rem;">Cadastre-se para publicar, curtir e salvar itens</small>
+              </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body p-4">
+            <div id="guestRegisterAlert" class="alert alert-danger d-none py-2 small" role="alert"></div>
+            <div class="mb-3">
+              <label for="guestRegName" class="form-label small fw-semibold">Nome Completo</label>
+              <input type="text" class="form-control" id="guestRegName" placeholder="Ex: Carlos Eduardo Silva" required>
+            </div>
+            <div class="mb-3">
+              <label for="guestRegEmail" class="form-label small fw-semibold">E-mail Institucional</label>
+              <input type="email" class="form-control" id="guestRegEmail" placeholder="seu.nome@ifbaiano.edu.br" required>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-sm-6">
+                <label for="guestRegPass" class="form-label small fw-semibold">Senha</label>
+                <input type="password" class="form-control" id="guestRegPass" minlength="6" placeholder="Mínimo 6 dígitos" required>
+              </div>
+              <div class="col-sm-6">
+                <label for="guestRegPassConfirm" class="form-label small fw-semibold">Confirmar Senha</label>
+                <input type="password" class="form-control" id="guestRegPassConfirm" minlength="6" placeholder="Repita a senha" required>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-top py-3 px-4 bg-body-tertiary d-flex justify-content-between">
+            <a href="landing.html" class="btn btn-outline-secondary btn-sm">Já tenho conta (Login)</a>
+            <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold" id="btnGuestRegisterSubmit">
+              <i class="bi bi-check-lg me-1"></i>Criar Conta
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -511,7 +646,6 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            
             <div class="mb-3">
               <label for="eventTitle" class="form-label small fw-semibold">Título do Evento / Prazo</label>
               <input type="text" class="form-control" id="eventTitle" placeholder="Ex: Prazo final para envio de relatório" required>
@@ -538,7 +672,6 @@
               <label for="eventDesc" class="form-label small fw-semibold">Descrição / Observações</label>
               <textarea class="form-control" id="eventDesc" rows="3" placeholder="Informações complementares sobre horários, locais ou instruções..."></textarea>
             </div>
-
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -577,6 +710,9 @@
 
   <!-- Scripts da Aplicação -->
   <script src="js/api.js"></script>
+  <script src="js/usuario.js"></script>
+  <script src="js/mural.js"></script>
+  <script src="js/calendario.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

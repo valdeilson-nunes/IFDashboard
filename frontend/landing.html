@@ -14,95 +14,82 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-  <!-- Estilos Customizados -->
+  <!-- Estilos Customizados (Paleta Original) -->
   <link rel="stylesheet" href="css/custom.css">
 </head>
-<body class="corpo-entrada" data-theme="light">
+<body class="corpo-entrada d-flex flex-column min-vh-100" data-theme="light">
 
-  <!-- NAVBAR PÚBLICA -->
-  <header class="navbar navbar-expand-lg border-bottom sticky-top barra-topo">
-    <div class="container py-1">
-      <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="#">
-        <i class="bi bi-pin-angle-fill text-danger fs-3"></i>
-        <div class="d-flex flex-column">
-          <span class="marca-titulo">IFDashboard</span>
-          <span class="marca-subtitulo text-muted">IF Baiano • Campus Lapa</span>
-        </div>
-      </a>
+  <!-- BOTÃO DISCRETO DE TEMA NO CANTO SUPERIOR DIREITO -->
+  <div class="position-fixed top-0 end-0 p-3" style="z-index: 1030;">
+    <button class="btn btn-outline-secondary btn-icone shadow-sm" id="themeToggleBtn" title="Alternar tema">
+      <i class="bi bi-moon-stars"></i>
+    </button>
+  </div>
 
-      <div class="d-flex align-items-center gap-2 ms-auto">
-        <button class="btn btn-outline-secondary btn-icone" id="themeToggleBtn" title="Alternar tema">
-          <i class="bi bi-moon-stars"></i>
-        </button>
-        <button class="btn btn-primary d-none d-sm-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#registerModal">
-          <i class="bi bi-person-plus"></i> Cadastre-se
-        </button>
-        <a href="#loginSection" class="btn btn-outline-primary d-none d-sm-inline-flex align-items-center gap-1">
-          <i class="bi bi-box-arrow-in-right"></i> Acessar
-        </a>
-      </div>
-    </div>
-  </header>
+  <!-- CONTEÚDO PRINCIPAL CENTRALIZADO NA TELA -->
+  <main class="secao-principal flex-grow-1 d-flex align-items-center py-5" id="loginSection">
+    <div class="container">
+      <div class="row align-items-center justify-content-between g-5">
 
-  <!-- HERO SECTION COM FORMULÁRIO DE LOGIN -->
-  <section class="secao-principal py-5 position-relative overflow-hidden" id="loginSection">
-    <div class="container py-lg-4">
-      <div class="row align-items-center g-5">
-        
-        <!-- COLUNA ESQUERDA: APRESENTAÇÃO E NOTAS DO MURAL -->
-        <div class="col-lg-7">
+        <!-- COLUNA ESQUERDA: RESUMO ACADÊMICO INTELIGENTE E MINIMALISTA -->
+        <div class="col-lg-6">
           <div class="pe-lg-4">
-            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 mb-3 rounded-pill bg-danger-subtle text-danger border border-danger-subtle fw-medium small">
-              <i class="bi bi-megaphone-fill"></i>
-              <span>O mural da comunidade acadêmica</span>
+
+            <!-- Identidade da Marca -->
+            <div class="d-flex align-items-center gap-2 mb-4">
+              <i class="bi bi-pin-angle-fill text-danger fs-2"></i>
+              <div class="d-flex flex-column">
+                <span class="marca-titulo fw-bold fs-4 lh-1" style="font-family: var(--font-display);">IFDashboard</span>
+                <span class="marca-subtitulo text-muted small">IF Baiano • Campus Bom Jesus da Lapa</span>
+              </div>
             </div>
 
-            <h1 class="display-4 fw-bold text-balance mb-3" style="font-family: var(--font-display);">
-              Tudo o que acontece no campus, em um só lugar.
+            <!-- Título Principal -->
+            <h1 class="display-5 fw-bold text-balance mb-3" style="font-family: var(--font-display);">
+              Comunicação acadêmica centralizada e sem ruído.
             </h1>
-            
+
             <p class="lead text-muted mb-4">
-              Avisos oficiais, achados e perdidos, troca de serviços e editais acadêmicos publicados pela própria comunidade do IF Baiano — Campus Lapa.
+              O mural digital oficial e colaborativo para conectar estudantes, docentes e servidores do campus em um só ambiente.
             </p>
 
-            <!-- NOTAS ILUSTRATIVAS ESTILO POST-IT -->
-            <div class="row g-3 pt-2">
-              <div class="col-sm-6">
-                <div class="mini-bilhete mini-bilhete-achados p-3 rounded-3 shadow-sm position-relative">
-                  <span class="mini-pino bg-danger"></span>
-                  <div class="fw-bold small text-uppercase mb-1 text-danger">
-                    <i class="bi bi-search me-1"></i> Achados & Perdidos
-                  </div>
-                  <p class="mb-0 small fw-medium">"Encontrei uma chave de moto perto da cantina do Bloco B."</p>
-                </div>
+            <!-- PRÉVIA AO VIVO DO MURAL DO CAMPUS -->
+            <div class="pt-2">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-uppercase text-muted fw-semibold d-flex align-items-center gap-2" style="font-family: 'Space Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em;">
+                  <span class="d-inline-block rounded-circle bg-success" style="width: 7px; height: 7px;"></span>
+                  Atividade recente no campus
+                </span>
+                <span class="text-muted" style="font-family: 'Space Mono', monospace; font-size: 0.7rem;">IF Baiano • Lapa</span>
               </div>
 
-              <div class="col-sm-6">
-                <div class="mini-bilhete mini-bilhete-editais p-3 rounded-3 shadow-sm position-relative">
-                  <span class="mini-pino bg-warning"></span>
-                  <div class="fw-bold small text-uppercase mb-1 text-warning-emphasis">
-                    <i class="bi bi-file-earmark-text me-1"></i> Editais DIRENS
+              <div id="landingLiveFeed" class="rounded-4 border border-secondary-subtle overflow-hidden" style="background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(6px);">
+                <!-- Item 1 (Fallback / Carregamento) -->
+                <div class="p-3 border-bottom border-secondary-subtle d-flex align-items-center justify-content-between gap-3">
+                  <div class="d-flex align-items-center gap-3 overflow-hidden">
+                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill">Editais</span>
+                    <span class="small fw-medium text-truncate">Auxílio Permanência 2026.2 — Inscrições abertas</span>
                   </div>
-                  <p class="mb-0 small fw-medium">"Auxílio Permanência 2026.2 — Inscrições até 05/08."</p>
+                  <small class="text-muted text-nowrap" style="font-family: 'Space Mono', monospace; font-size: 0.7rem;">DIRENS</small>
                 </div>
-              </div>
-            </div>
 
-            <!-- ESTATÍSTICAS RÁPIDAS -->
-            <div class="d-flex flex-wrap gap-4 pt-4 mt-2 border-top">
-              <div>
-                <h4 class="fw-bold mb-0" style="font-family: var(--font-display);">100%</h4>
-                <small class="text-muted">Gratuito & Aberto</small>
-              </div>
-              <div class="vr"></div>
-              <div>
-                <h4 class="fw-bold mb-0" style="font-family: var(--font-display);">Colaborativo</h4>
-                <small class="text-muted">Feito para alunos e servidores</small>
-              </div>
-              <div class="vr"></div>
-              <div>
-                <h4 class="fw-bold mb-0" style="font-family: var(--font-display);">Tempo Real</h4>
-                <small class="text-muted">Avisos e WhatsApp direto</small>
+                <!-- Item 2 -->
+                <div class="p-3 border-bottom border-secondary-subtle d-flex align-items-center justify-content-between gap-3">
+                  <div class="d-flex align-items-center gap-3 overflow-hidden">
+                    <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle rounded-pill">Achados</span>
+                    <span class="small fw-medium text-truncate">Chave de moto encontrada próximo à cantina (Bloco B)</span>
+                  </div>
+                  <small class="text-muted text-nowrap" style="font-family: 'Space Mono', monospace; font-size: 0.7rem;">Hoje</small>
+                </div>
+
+                <!-- Item 3 -->
+                <div class="p-3 d-flex align-items-center justify-content-between gap-3">
+                  <div class="d-flex align-items-center gap-3 overflow-hidden">
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">Pesquisa</span>
+                    <span class="small fw-medium text-truncate">Seleção de monitoria — Programação I & Banco de Dados</span>
+                  </div>
+                  <small class="text-muted text-nowrap" style="font-family: 'Space Mono', monospace; font-size: 0.7rem;">GTI</small>
+                </div>
               </div>
             </div>
 
@@ -118,7 +105,7 @@
                 <div class="icone-login d-inline-flex align-items-center justify-content-center rounded-circle mb-2">
                   <i class="bi bi-person-fill-lock fs-3 text-primary"></i>
                 </div>
-                <h3 class="fw-bold mb-1" style="font-family: var(--font-display);">Acesse o Mural</h3>
+                <h2 class="h4 fw-bold mb-1" style="font-family: var(--font-display);">Acesse o Mural</h2>
                 <p class="text-muted small mb-0">Entre com sua conta ou explore sem compromisso.</p>
               </div>
 
@@ -128,53 +115,51 @@
                 <span id="loginAlertMessage">Credenciais inválidas</span>
               </div>
 
-              <!-- FORMULÁRIO DE LOGIN COM EMAIL E SENHA -->
-              <form id="loginForm" onsubmit="fazerLoginEmail(event)">
+              <!-- Formulário de Login -->
+              <form id="loginForm" onsubmit="fazerLogin(event)" autocomplete="off">
                 <div class="mb-3">
                   <label for="loginEmail" class="form-label small fw-semibold">E-mail Institucional</label>
                   <div class="input-group">
-                    <span class="input-group-text bg-transparent"><i class="bi bi-envelope text-muted"></i></span>
-                    <input 
-                      type="email" 
-                      class="form-control" 
-                      id="loginEmail" 
-                      placeholder="seu.nome@ifbaiano.edu.br" 
+                    <span class="input-group-text"><i class="bi bi-envelope text-muted"></i></span>
+                    <input
+                      type="email"
+                      class="form-control"
+                      id="loginEmail"
+                      name="ifd_user_email"
+                      placeholder="seu.nome@ifbaiano.edu.br"
+                      autocomplete="off"
+                      readonly
+                      onfocus="this.removeAttribute('readonly');"
                       required
-                      value="valdeilson@ifbaiano.edu.br"
                     >
                   </div>
-                  <div class="form-text text-muted" style="font-size: 0.75rem;">Utilize seu e-mail @ifbaiano.edu.br ou cadastrado.</div>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-4">
                   <div class="d-flex justify-content-between align-items-center mb-1">
                     <label for="loginPassword" class="form-label small fw-semibold mb-0">Senha</label>
-                    <a href="javascript:void(0)" onclick="alert('Funcionalidade de recuperação: contate o suporte de TI do campus ou redefina no portal institucional.')" class="small text-decoration-none" style="font-size: 0.75rem;">Esqueceu?</a>
                   </div>
                   <div class="input-group">
-                    <span class="input-group-text bg-transparent"><i class="bi bi-shield-lock text-muted"></i></span>
-                    <input 
-                      type="password" 
-                      class="form-control border-end-0" 
-                      id="loginPassword" 
-                      placeholder="Sua senha de acesso" 
+                    <span class="input-group-text"><i class="bi bi-lock text-muted"></i></span>
+                    <input
+                      type="password"
+                      class="form-control"
+                      id="loginPassword"
+                      name="ifd_user_pass"
+                      placeholder="••••••••"
+                      autocomplete="new-password"
+                      readonly
+                      onfocus="this.removeAttribute('readonly');"
                       required
-                      value="123456"
                     >
-                    <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePasswordBtn" onclick="alternarVisibilidadeSenha()">
+                    <button class="btn btn-outline-secondary" type="button" onclick="alternarVisibilidadeSenha('loginPassword', this)">
                       <i class="bi bi-eye" id="passwordIcon"></i>
                     </button>
                   </div>
                 </div>
 
-                <div class="mb-3 form-check">
-                  <input type="checkbox" class="form-check-input" id="rememberMe" checked>
-                  <label class="form-check-label small text-muted" for="rememberMe">Lembrar neste dispositivo</label>
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2 mb-3" id="btnLoginSubmit">
-                  <i class="bi bi-box-arrow-in-right"></i>
-                  <span>Entrar com E-mail</span>
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" id="btnLoginSubmit">
+                  Entrar no Mural
                 </button>
               </form>
 
@@ -185,8 +170,8 @@
               </div>
 
               <!-- BOTÃO DE ENTRAR COMO VISITANTE -->
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="btn btn-outline-dark w-100 py-2 d-flex align-items-center justify-content-center gap-2 btn-visitante"
                 id="btnGuestSubmit"
                 onclick="fazerLoginVisitante()"
@@ -208,71 +193,13 @@
 
       </div>
     </div>
-  </section>
-
-  <!-- SEÇÃO DE RECURSOS / DIFERENCIAIS -->
-  <section class="secao-recursos py-5 border-top">
-    <div class="container py-lg-4">
-      <div class="text-center larg-max-700 mx-auto mb-5">
-        <h2 class="fw-bold mb-2" style="font-family: var(--font-display);">Recursos pensados para a rotina no Campus</h2>
-        <p class="text-muted">Eliminamos a perda de avisos em grupos dispersos e centralizamos tudo o que você precisa saber.</p>
-      </div>
-
-      <div class="row g-4">
-        
-        <!-- Card 1 -->
-        <div class="col-md-6 col-lg-3">
-          <div class="card h-100 border-0 shadow-sm p-4 rounded-4 card-recurso">
-            <div class="icone-recurso bg-danger-subtle text-danger mb-3">
-              <i class="bi bi-search fs-4"></i>
-            </div>
-            <h5 class="fw-bold mb-2">Achados e Perdidos</h5>
-            <p class="text-muted small mb-0">Esqueceu ou encontrou materiais, casacos ou chaves? Anuncie em segundos e converse diretamente via WhatsApp com quem achou.</p>
-          </div>
-        </div>
-
-        <!-- Card 2 -->
-        <div class="col-md-6 col-lg-3">
-          <div class="card h-100 border-0 shadow-sm p-4 rounded-4 card-recurso">
-            <div class="icone-recurso fundo-magenta-suave texto-magenta mb-3">
-              <i class="bi bi-tag-fill fs-4"></i>
-            </div>
-            <h5 class="fw-bold mb-2">Serviços e Vendas</h5>
-            <p class="text-muted small mb-0">Aulas particulares de cálculo e reforço, calculadoras científicas, jalecos e livros didáticos com preço justo entre estudantes.</p>
-          </div>
-        </div>
-
-        <!-- Card 3 -->
-        <div class="col-md-6 col-lg-3">
-          <div class="card h-100 border-0 shadow-sm p-4 rounded-4 card-recurso">
-            <div class="icone-recurso bg-primary-subtle text-primary mb-3">
-              <i class="bi bi-mortarboard-fill fs-4"></i>
-            </div>
-            <h5 class="fw-bold mb-2">Pesquisa e Extensão</h5>
-            <p class="text-muted small mb-0">Oportunidades de bolsas PIBIC, vagas de monitoria e projetos sociais com contagem regressiva para inscrição.</p>
-          </div>
-        </div>
-
-        <!-- Card 4 -->
-        <div class="col-md-6 col-lg-3">
-          <div class="card h-100 border-0 shadow-sm p-4 rounded-4 card-recurso">
-            <div class="icone-recurso bg-warning-subtle text-warning-emphasis mb-3">
-              <i class="bi bi-calendar3 fs-4"></i>
-            </div>
-            <h5 class="fw-bold mb-2">Calendário Acadêmico</h5>
-            <p class="text-muted small mb-0">Prazos de auxílios, semanas acadêmicas, períodos de manutenção de laboratórios e recessos acadêmicos num só lugar.</p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
+  </main>
 
   <!-- MODAL: CADASTRO DE NOVO USUÁRIO -->
   <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
-        <form id="registerForm" onsubmit="fazerCadastro(event)">
+        <form id="registerForm" onsubmit="fazerCadastro(event)" autocomplete="off">
           <div class="modal-header border-bottom py-3 px-4 bg-body-tertiary">
             <div class="d-flex align-items-center gap-2">
               <i class="bi bi-person-plus-fill text-primary fs-4"></i>
@@ -295,11 +222,11 @@
               <label for="registerName" class="form-label small fw-semibold">Nome Completo</label>
               <div class="input-group">
                 <span class="input-group-text bg-transparent"><i class="bi bi-person text-muted"></i></span>
-                <input 
-                  type="text" 
-                  class="form-control" 
-                  id="registerName" 
-                  placeholder="Ex: Carlos Eduardo Silva" 
+                <input
+                  type="text"
+                  class="form-control"
+                  id="registerName"
+                  placeholder="Ex: Carlos Eduardo Silva"
                   required
                 >
               </div>
@@ -309,11 +236,11 @@
               <label for="registerEmail" class="form-label small fw-semibold">E-mail Institucional</label>
               <div class="input-group">
                 <span class="input-group-text bg-transparent"><i class="bi bi-envelope text-muted"></i></span>
-                <input 
-                  type="email" 
-                  class="form-control" 
-                  id="registerEmail" 
-                  placeholder="seu.nome@ifbaiano.edu.br" 
+                <input
+                  type="email"
+                  class="form-control"
+                  id="registerEmail"
+                  placeholder="seu.nome@ifbaiano.edu.br"
                   required
                 >
               </div>
@@ -325,11 +252,11 @@
                 <label for="registerPassword" class="form-label small fw-semibold">Senha</label>
                 <div class="input-group">
                   <span class="input-group-text bg-transparent"><i class="bi bi-shield-lock text-muted"></i></span>
-                  <input 
-                    type="password" 
-                    class="form-control" 
-                    id="registerPassword" 
-                    placeholder="Mínimo 6 dígitos" 
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="registerPassword"
+                    placeholder="Mínimo 6 dígitos"
                     minlength="6"
                     required
                   >
@@ -339,11 +266,11 @@
                 <label for="registerPasswordConfirm" class="form-label small fw-semibold">Confirmar Senha</label>
                 <div class="input-group">
                   <span class="input-group-text bg-transparent"><i class="bi bi-shield-check text-muted"></i></span>
-                  <input 
-                    type="password" 
-                    class="form-control" 
-                    id="registerPasswordConfirm" 
-                    placeholder="Repita a senha" 
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="registerPasswordConfirm"
+                    placeholder="Repita a senha"
                     minlength="6"
                     required
                   >
@@ -370,17 +297,10 @@
     </div>
   </div>
 
-  <!-- RODAPÉ -->
-  <footer class="rodape py-4 border-top">
+  <!-- RODAPÉ DISCRETO -->
+  <footer class="rodape py-3 border-top">
     <div class="container text-center text-muted small">
-      <div class="d-flex flex-wrap justify-content-center align-items-center gap-3 mb-2">
-        <span class="fw-bold">IFDashboard</span>
-        <span>•</span>
-        <span>Instituto Federal Baiano — Campus Lapa</span>
-        <span>•</span>
-        <span>Mural Comunitário Acadêmico</span>
-      </div>
-      <p class="mb-0">Desenvolvido com Python (Flask REST API), JavaScript e Bootstrap 5.</p>
+      <span>IFDashboard • Instituto Federal Baiano — Campus Bom Jesus da Lapa</span>
     </div>
   </footer>
 
@@ -392,21 +312,30 @@
 
   <!-- Script da Landing Page -->
   <script>
+    // Limpa qualquer autofill residual ao carregar a página
+    window.addEventListener('pageshow', () => {
+      const emailInput = document.getElementById('loginEmail');
+      const passInput = document.getElementById('loginPassword');
+      if (emailInput) emailInput.value = '';
+      if (passInput) passInput.value = '';
+    });
+
     // Alternar visibilidade da senha
-    function alternarVisibilidadeSenha() {
-      const campoSenha = document.getElementById('loginPassword');
-      const iconeSenha = document.getElementById('passwordIcon');
+    function alternarVisibilidadeSenha(idCampo = 'loginPassword', botao = null) {
+      const campoSenha = document.getElementById(idCampo);
+      if (!campoSenha) return;
+      const iconeSenha = botao ? botao.querySelector('i') : document.getElementById('passwordIcon');
       if (campoSenha.type === 'password') {
         campoSenha.type = 'text';
-        iconeSenha.className = 'bi bi-eye-slash';
+        if (iconeSenha) iconeSenha.className = 'bi bi-eye-slash';
       } else {
         campoSenha.type = 'password';
-        iconeSenha.className = 'bi bi-eye';
+        if (iconeSenha) iconeSenha.className = 'bi bi-eye';
       }
     }
 
     // Login com E-mail e Senha
-    async function fazerLoginEmail(evento) {
+    async function fazerLogin(evento) {
       evento.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();
       const senha = document.getElementById('loginPassword').value.trim();
@@ -420,16 +349,12 @@
 
       try {
         const resposta = await servicoApi.fazerLogin(email, senha);
-        // Salva dados da sessão
         localStorage.setItem('ifdashboard_user', JSON.stringify(resposta.user));
-        // Redireciona para o mural
         window.location.href = 'index.html';
       } catch (erro) {
-        // Se a API não estiver rodando ou credenciais inválidas, permite fallback com aviso
         console.warn('Erro na API:', erro);
         if (erro.message.includes('Failed to fetch') || erro.message.includes('NetworkError')) {
-          // Servidor backend offline: concede entrada em modo demonstração local
-          const usuarioDemo = { id: 1, name: email.split('@')[0], email: email, role: 'student' };
+          const usuarioDemo = { id: 1, name: email.split('@')[0], email: email, role: 'basico' };
           localStorage.setItem('ifdashboard_user', JSON.stringify(usuarioDemo));
           window.location.href = 'index.html';
         } else {
@@ -438,7 +363,7 @@
         }
       } finally {
         botao.disabled = false;
-        botao.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> <span>Entrar com E-mail</span>';
+        botao.textContent = 'Entrar no Mural';
       }
     }
 
@@ -452,7 +377,6 @@
         localStorage.setItem('ifdashboard_user', JSON.stringify(resposta.user));
         window.location.href = 'index.html';
       } catch (erro) {
-        // Fallback local se backend offline
         const usuarioVisitante = { id: 0, name: 'Visitante', email: 'visitante@ifbaiano.edu.br', role: 'guest' };
         localStorage.setItem('ifdashboard_user', JSON.stringify(usuarioVisitante));
         window.location.href = 'index.html';
@@ -489,16 +413,12 @@
 
       try {
         const resposta = await servicoApi.cadastrarUsuario(nome, email, senha);
-        // Salva os dados do usuário autenticado no navegador
         localStorage.setItem('ifdashboard_user', JSON.stringify(resposta.user));
-        
-        // Redireciona para o mural
         window.location.href = 'index.html';
       } catch (erro) {
         console.warn('Erro no cadastro:', erro);
         if (erro.message.includes('Failed to fetch') || erro.message.includes('NetworkError')) {
-          // Fallback para demonstração se a API estiver offline
-          const usuarioDemo = { id: Date.now(), name: nome, email: email, role: 'student' };
+          const usuarioDemo = { id: Date.now(), name: nome, email: email, role: 'basico' };
           localStorage.setItem('ifdashboard_user', JSON.stringify(usuarioDemo));
           window.location.href = 'index.html';
         } else {
@@ -525,8 +445,7 @@
       }
     }
 
-    // Inicializar tema salvo ou preferência do sistema
-    const temaSalvo = localStorage.getItem('ifdashboard_theme') || 
+    const temaSalvo = localStorage.getItem('ifdashboard_theme') ||
       (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     aplicarTema(temaSalvo);
 
@@ -539,11 +458,52 @@
 
     // Aliases para compatibilidade
     window.togglePasswordVisibility = alternarVisibilidadeSenha;
-    window.handleEmailLogin = fazerLoginEmail;
+    window.fazerLogin = fazerLogin;
+    window.handleEmailLogin = fazerLogin;
     window.handleGuestLogin = fazerLoginVisitante;
     window.handleRegister = fazerCadastro;
     window.fazerCadastro = fazerCadastro;
     window.applyTheme = aplicarTema;
+
+    // Carrega prévia real das 3 últimas publicações do mural (se a API estiver online)
+    (async function carregarPreviaMural() {
+      const container = document.getElementById('landingLiveFeed');
+      if (!container || typeof servicoApi === 'undefined') return;
+
+      const coresBadge = {
+        editais: 'bg-primary-subtle text-primary-emphasis border-primary-subtle',
+        avisos: 'bg-info-subtle text-info-emphasis border-info-subtle',
+        pesquisa: 'bg-warning-subtle text-warning-emphasis border-warning-subtle',
+        achados: 'bg-danger-subtle text-danger-emphasis border-danger-subtle',
+        servicos: 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle'
+      };
+
+      try {
+        const posts = await servicoApi.obterPublicacoes('', '', 'recent');
+        if (!Array.isArray(posts) || posts.length === 0) return;
+
+        const recentes = posts.slice(0, 3);
+        container.innerHTML = recentes.map((p, idx) => {
+          const cat = (p.category || 'avisos').toLowerCase();
+          const classeBadge = coresBadge[cat] || coresBadge.avisos;
+          const borda = idx < recentes.length - 1 ? 'border-bottom border-secondary-subtle' : '';
+          const tituloSeguro = String(p.title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          const autorSeguro = String(p.author || 'Campus').split(' ')[0].replace(/</g, '&lt;');
+
+          return `
+            <div class="p-3 ${borda} d-flex align-items-center justify-content-between gap-3">
+              <div class="d-flex align-items-center gap-3 overflow-hidden">
+                <span class="badge ${classeBadge} border rounded-pill text-capitalize">${cat}</span>
+                <span class="small fw-medium text-truncate">${tituloSeguro}</span>
+              </div>
+              <small class="text-muted text-nowrap" style="font-family: 'Space Mono', monospace; font-size: 0.7rem;">${autorSeguro}</small>
+            </div>
+          `;
+        }).join('');
+      } catch {
+        // Mantém o fallback estático silenciosamente se a API estiver offline
+      }
+    })();
   </script>
 </body>
 </html>

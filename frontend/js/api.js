@@ -1,168 +1,144 @@
-/**
- * Camada de Comunicação com a API REST Flask
- */
 const URL_BASE_API = '/api';
-const API_BASE_URL = URL_BASE_API;
+
+function obterHeadersAuth(extra = {}) {
+  const headers = { ...extra };
+  try {
+    const u = JSON.parse(localStorage.getItem('ifdashboard_user') || 'null');
+    if (u && u.id) headers['X-User-Id'] = String(u.id);
+  } catch (e) {}
+  return headers;
+}
+
+async function requisicaoJson(url, opcoes = {}, erroPadrao = 'Erro na requisição.') {
+  const resposta = await fetch(url, opcoes);
+  const dados = await resposta.json().catch(() => ({}));
+  if (!resposta.ok) throw new Error(dados.error || erroPadrao);
+  return dados;
+}
 
 const servicoApi = {
-  // Obter lista de publicações com filtros
-  async obterPublicacoes(categoria = '', busca = '', ordenacao = 'recent') {
-    const parametros = new URLSearchParams();
-    if (categoria && categoria !== 'todos') parametros.append('category', categoria);
-    if (busca) parametros.append('search', busca);
-    if (ordenacao) parametros.append('sort', ordenacao);
-
-    const resposta = await fetch(`${URL_BASE_API}/posts?${parametros.toString()}`);
-    if (!resposta.ok) throw new Error(`Erro ao buscar publicações: ${resposta.statusText}`);
-    return await resposta.json();
+  obterPublicacoes(categoria = '', busca = '', ordenacao = 'recent') {
+    const params = new URLSearchParams();
+    if (categoria && categoria !== 'todos') params.append('category', categoria);
+    if (busca) params.append('search', busca);
+    if (ordenacao) params.append('sort', ordenacao);
+    return requisicaoJson(`${URL_BASE_API}/posts?${params.toString()}`, {}, 'Erro ao buscar publicações.');
   },
 
-  // Obter uma publicação específica
-  async obterPublicacaoPorId(id) {
-    const resposta = await fetch(`${URL_BASE_API}/posts/${id}`);
-    if (!resposta.ok) throw new Error(`Erro ao buscar publicação: ${resposta.statusText}`);
-    return await resposta.json();
+  obterPublicacaoPorId(id) {
+    return requisicaoJson(`${URL_BASE_API}/posts/${id}`, {}, 'Publicação não encontrada.');
   },
 
-  // Criar nova publicação (aceita JSON ou FormData para imagens carregadas)
-  async criarPublicacao(dadosPublicacao) {
+  criarPublicacao(dadosPublicacao) {
     const ehFormData = dadosPublicacao instanceof FormData;
-    const opcoes = {
+    return requisicaoJson(`${URL_BASE_API}/posts`, {
       method: 'POST',
+      headers: ehFormData ? obterHeadersAuth() : obterHeadersAuth({ 'Content-Type': 'application/json' }),
       body: ehFormData ? dadosPublicacao : JSON.stringify(dadosPublicacao)
-    };
-    if (!ehFormData) {
-      opcoes.headers = { 'Content-Type': 'application/json' };
-    }
-    const resposta = await fetch(`${URL_BASE_API}/posts`, opcoes);
-    if (!resposta.ok) {
-      let mensagemErro = `Erro ao criar publicação: ${resposta.statusText}`;
-      try {
-        const jsonErro = await resposta.json();
-        if (jsonErro && jsonErro.error) mensagemErro = jsonErro.error;
-      } catch (e) {}
-      throw new Error(mensagemErro);
-    }
-    return await resposta.json();
+    }, 'Erro ao criar publicação.');
   },
 
-  // Upload independente de imagem (se necessário)
-  async enviarImagem(arquivo) {
-    const dadosFormulario = new FormData();
-    dadosFormulario.append('image', arquivo);
-    const resposta = await fetch(`${URL_BASE_API}/upload`, {
-      method: 'POST',
-      body: dadosFormulario
-    });
-    if (!resposta.ok) {
-      const erro = await resposta.json().catch(() => ({}));
-      throw new Error(erro.error || 'Erro ao carregar imagem.');
-    }
-    return await resposta.json();
+  editarPublicacao(id, dados) {
+    return requisicaoJson(`${URL_BASE_API}/posts/${id}`, {
+      method: 'PUT',
+      headers: obterHeadersAuth({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(dados)
+    }, 'Erro ao editar publicação.');
   },
 
-  // Curtir / Descurtir
-  async alternarCurtida(id, acao = 'increment') {
-    const resposta = await fetch(`${URL_BASE_API}/posts/${id}/like`, {
+  removerPublicacao(id) {
+    return requisicaoJson(`${URL_BASE_API}/posts/${id}`, {
+      method: 'DELETE',
+      headers: obterHeadersAuth()
+    }, 'Erro ao remover publicação.');
+  },
+
+  alternarCurtida(id, acao = 'increment') {
+    return requisicaoJson(`${URL_BASE_API}/posts/${id}/like`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: obterHeadersAuth({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ action: acao })
-    });
-    if (!resposta.ok) throw new Error(`Erro ao registrar curtida: ${resposta.statusText}`);
-    return await resposta.json();
+    }, 'Erro ao registrar curtida.');
   },
 
-  // Remover publicação
-  async removerPublicacao(id) {
-    const resposta = await fetch(`${URL_BASE_API}/posts/${id}`, {
-      method: 'DELETE'
-    });
-    if (!resposta.ok) {
-      const erro = await resposta.json().catch(() => ({}));
-      throw new Error(erro.error || `Erro ao remover publicação: ${resposta.statusText}`);
-    }
-    return await resposta.json();
+  obterEventos() {
+    return requisicaoJson(`${URL_BASE_API}/events`, {}, 'Erro ao buscar eventos.');
   },
 
-  // Eventos do Calendário
-  async obterEventos() {
-    const resposta = await fetch(`${URL_BASE_API}/events`);
-    if (!resposta.ok) throw new Error(`Erro ao buscar eventos: ${resposta.statusText}`);
-    return await resposta.json();
-  },
-
-  // Criar novo evento no Calendário
-  async criarEvento(dadosEvento) {
-    const resposta = await fetch(`${URL_BASE_API}/events`, {
+  criarEvento(dadosEvento) {
+    return requisicaoJson(`${URL_BASE_API}/events`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: obterHeadersAuth({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(dadosEvento)
-    });
-    if (!resposta.ok) {
-      const erro = await resposta.json();
-      throw new Error(erro.error || `Erro ao criar evento: ${resposta.statusText}`);
-    }
-    return await resposta.json();
+    }, 'Erro ao criar evento.');
   },
 
-  // Verificação de integridade da API (Health check)
-  async verificarStatus() {
-    try {
-      const resposta = await fetch(`${URL_BASE_API}/health`);
-      return resposta.ok;
-    } catch {
-      return false;
-    }
-  },
-
-  // Autenticação com Email e Senha
-  async fazerLogin(email, senha) {
-    const resposta = await fetch(`${URL_BASE_API}/auth/login`, {
+  fazerLogin(email, senha) {
+    return requisicaoJson(`${URL_BASE_API}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password: senha })
-    });
-    const dados = await resposta.json();
-    if (!resposta.ok) throw new Error(dados.error || 'Falha ao autenticar.');
-    return dados;
+    }, 'Falha ao autenticar.');
   },
 
-  // Cadastrar Novo Usuário
-  async cadastrarUsuario(nome, email, senha) {
-    const resposta = await fetch(`${URL_BASE_API}/auth/register`, {
+  cadastrarUsuario(nome, email, senha) {
+    return requisicaoJson(`${URL_BASE_API}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: nome, email: email, password: senha })
-    });
-    const dados = await resposta.json();
-    if (!resposta.ok) throw new Error(dados.error || 'Falha ao cadastrar usuário.');
-    return dados;
+      body: JSON.stringify({ name: nome, email, password: senha })
+    }, 'Falha ao cadastrar usuário.');
   },
 
-  // Entrar como Visitante
-  async entrarComoVisitante() {
-    const resposta = await fetch(`${URL_BASE_API}/auth/guest`, {
+  entrarComoVisitante() {
+    return requisicaoJson(`${URL_BASE_API}/auth/guest`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
+    }, 'Falha ao entrar como visitante.');
+  },
+
+  listarUsuarios() {
+    return requisicaoJson(`${URL_BASE_API}/auth/users`, {
+      headers: obterHeadersAuth()
+    }, 'Erro ao listar usuários.');
+  },
+
+  atualizarUsuarioAdmin(id, dados) {
+    return requisicaoJson(`${URL_BASE_API}/auth/users/${id}`, {
+      method: 'PUT',
+      headers: obterHeadersAuth({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(dados)
+    }, 'Erro ao atualizar usuário.');
+  },
+
+  obterPostsUsuarioAdmin(id) {
+    return requisicaoJson(`${URL_BASE_API}/auth/users/${id}/posts`, {
+      headers: obterHeadersAuth()
+    }, 'Erro ao carregar posts do usuário.');
+  },
+
+  async obterNotificacoes(userId) {
+    try {
+      return await requisicaoJson(`${URL_BASE_API}/auth/notifications/${userId}`, {
+        headers: obterHeadersAuth()
+      });
+    } catch {
+      return [];
+    }
+  },
+
+  marcarNotificacoesLidas(userId) {
+    return fetch(`${URL_BASE_API}/auth/notifications/${userId}/read`, {
+      method: 'POST',
+      headers: obterHeadersAuth()
     });
-    const dados = await resposta.json();
-    if (!resposta.ok) throw new Error(dados.error || 'Falha ao entrar como visitante.');
-    return dados;
+  },
+
+  limparNotificacoesApi(userId) {
+    return fetch(`${URL_BASE_API}/auth/notifications/${userId}`, {
+      method: 'DELETE',
+      headers: obterHeadersAuth()
+    });
   }
 };
 
-// Aliases para compatibilidade total
-servicoApi.getPosts = servicoApi.obterPublicacoes;
-servicoApi.getPostById = servicoApi.obterPublicacaoPorId;
-servicoApi.createPost = servicoApi.criarPublicacao;
-servicoApi.uploadImage = servicoApi.enviarImagem;
-servicoApi.toggleLike = servicoApi.alternarCurtida;
-servicoApi.getEvents = servicoApi.obterEventos;
-servicoApi.createEvent = servicoApi.criarEvento;
-servicoApi.checkHealth = servicoApi.verificarStatus;
-servicoApi.login = servicoApi.fazerLogin;
-servicoApi.register = servicoApi.cadastrarUsuario;
-servicoApi.loginAsGuest = servicoApi.entrarComoVisitante;
-servicoApi.deletePost = servicoApi.removerPublicacao;
 
-const api = servicoApi;
