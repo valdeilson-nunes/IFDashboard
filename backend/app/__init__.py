@@ -1,5 +1,6 @@
 import os
 import uuid
+from pathlib import Path
 from flask import Flask, send_from_directory, request, jsonify
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
@@ -17,7 +18,8 @@ allowed_file = arquivo_permitido
 
 def criar_app(classe_config=Configuracao):
     """Fábrica de aplicação Flask do IFDashboard"""
-    app = Flask(__name__)
+    pasta_frontend = str(Path(__file__).resolve().parent.parent.parent / 'frontend')
+    app = Flask(__name__, static_folder=pasta_frontend, static_url_path='')
     app.config.from_object(classe_config)
 
     # Garantir que a pasta de uploads exista
@@ -26,6 +28,9 @@ def criar_app(classe_config=Configuracao):
     # Inicializar extensões
     CORS(app, resources={r"/*": {"origins": "*"}})
     db.init_app(app)
+
+    with app.app_context():
+        db.create_all()
 
     # Registrar Blueprints / Rotas da API
     from app.routes.post_routes import rotas_publicacoes
@@ -51,11 +56,11 @@ def criar_app(classe_config=Configuracao):
     def fazer_upload_imagem():
         if 'image' not in request.files:
             return jsonify({'error': 'Nenhum arquivo enviado'}), 400
-        
+
         arquivo = request.files['image']
         if arquivo.filename == '':
             return jsonify({'error': 'Arquivo não selecionado'}), 400
-            
+
         if arquivo and arquivo_permitido(arquivo.filename):
             nome_unico = f"{uuid.uuid4().hex}_{secure_filename(arquivo.filename)}"
             caminho_arquivo = os.path.join(app.config['UPLOAD_FOLDER'], nome_unico)
@@ -66,6 +71,16 @@ def criar_app(classe_config=Configuracao):
             return jsonify({'image_url': url_imagem, 'filename': nome_unico}), 201
 
         return jsonify({'error': 'Formato de arquivo não suportado. Use PNG, JPG, JPEG, WEBP ou GIF.'}), 400
+
+    # Rota principal: abre a landing page ao acessar a raiz do site
+    @app.route('/', methods=['GET'])
+    def pagina_inicial():
+        return send_from_directory(app.static_folder, 'landing.html')
+
+    # Entrega index.html, css/custom.css, js/api.js, js/app.js etc.
+    @app.route('/<path:caminho>', methods=['GET'])
+    def arquivos_frontend(caminho):
+        return send_from_directory(app.static_folder, caminho)
 
     return app
 

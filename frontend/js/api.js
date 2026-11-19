@@ -1,8 +1,7 @@
 /**
  * Camada de Comunicação com a API REST Flask
  */
-const HOST_API = window.location.hostname || 'localhost';
-const URL_BASE_API = `http://${HOST_API}:5000/api`;
+const URL_BASE_API = '/api';
 const API_BASE_URL = URL_BASE_API;
 
 const servicoApi = {

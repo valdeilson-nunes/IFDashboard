@@ -275,10 +275,11 @@ create_event = criar_evento
 ==================== C:\Coding\ifdashboard\backend\app\routes\post_routes.py ====================
 import os
 import uuid
+from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 from app import db
-from app.models import Publicacao
+from app.models import Publicacao, Evento
 
 EXTENSOES_PERMITIDAS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
 ALLOWED_EXTENSIONS = EXTENSOES_PERMITIDAS
@@ -355,21 +356,69 @@ def criar_publicacao():
     if not dados.get('title') or not dados.get('category'):
         return jsonify({'error': 'TÃ­tulo e categoria sÃ£o obrigatÃ³rios'}), 400
 
+    categoria = dados.get('category')
+    data_inicio_str = (dados.get('start_date') or '').strip()
+    data_fim_str = (dados.get('end_date') or '').strip()
+    prazo_formatado = dados.get('deadline')
+
+    dt_inicio = None
+    dt_fim = None
+
+    if categoria in ('pesquisa', 'editais', 'avisos'):
+        if not data_inicio_str:
+            return jsonify({'error': 'A data de inÃ­cio do perÃ­odo Ã© obrigatÃ³ria para esta categoria.'}), 400
+        try:
+            dt_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
+            dt_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date() if data_fim_str else dt_inicio
+        except ValueError:
+            return jsonify({'error': 'Formato de data invÃ¡lido. Use AAAA-MM-DD.'}), 400
+
+        if dt_fim < dt_inicio:
+            return jsonify({'error': 'A data de tÃ©rmino nÃ£o pode ser anterior Ã  data de inÃ­cio.'}), 400
+
+        if dt_inicio == dt_fim:
+            prazo_formatado = dt_inicio.strftime('%d/%m/%Y')
+        else:
+            prazo_formatado = f"{dt_inicio.strftime('%d/%m/%Y')} a {dt_fim.strftime('%d/%m/%Y')}"
+
     nova_publicacao = Publicacao(
-        category=dados.get('category'),
+        category=categoria,
         sub_type=dados.get('sub_type'),
         title=dados.get('title'),
         description=dados.get('description', ''),
         location=dados.get('location', 'Campus Lapa'),
         author=dados.get('author', 'UsuÃ¡rio IF'),
         price=dados.get('price'),
-        deadline=dados.get('deadline'),
+        deadline=prazo_formatado,
         contact_wpp=dados.get('contact_wpp'),
         image_url=url_imagem,
         is_pinned=bool(dados.get('is_pinned', False))
     )
 
     db.session.add(nova_publicacao)
+    db.session.flush()  # Garante o ID da publicaÃ§Ã£o antes de criar os eventos
+
+    # LanÃ§a os dias correspondentes no CalendÃ¡rio AcadÃªmico
+    if dt_inicio and dt_fim:
+        total_dias = (dt_fim - dt_inicio).days
+        for i in range(total_dias + 1):
+            dia_atual = dt_inicio + timedelta(days=i)
+            titulo_evento = nova_publicacao.title
+            if total_dias > 0:
+                if i == 0:
+                    titulo_evento = f"[InÃ­cio] {nova_publicacao.title}"
+                elif i == total_dias:
+                    titulo_evento = f"[Encerramento] {nova_publicacao.title}"
+
+            evento_cal = Evento(
+                category=nova_publicacao.category,
+                title=titulo_evento,
+                description=nova_publicacao.description,
+                event_date=dia_atual,
+                post_id=nova_publicacao.id
+            )
+            db.session.add(evento_cal)
+
     db.session.commit()
 
     return jsonify(nova_publicacao.para_dicionario()), 201
@@ -398,7 +447,7 @@ toggle_like = alternar_curtida
 
 @rotas_publicacoes.route('/<int:post_id>', methods=['DELETE'])
 def remover_publicacao(post_id):
-    """Remove uma publicaÃ§Ã£o e sua imagem local associada, se existir"""
+    """Remove uma publicaÃ§Ã£o, sua imagem local e os eventos vinculados no calendÃ¡rio"""
     publicacao = Publicacao.query.get_or_404(post_id)
 
     if publicacao.image_url and '/uploads/' in publicacao.image_url:
@@ -410,9 +459,12 @@ def remover_publicacao(post_id):
             except OSError:
                 pass
 
+    # Remove todos os eventos do calendÃ¡rio vinculados a esta publicaÃ§Ã£o
+    Evento.query.filter_by(post_id=publicacao.id).delete()
+
     db.session.delete(publicacao)
     db.session.commit()
-    return jsonify({'message': 'PublicaÃ§Ã£o removida com sucesso'}), 200
+    return jsonify({'message': 'PublicaÃ§Ã£o e eventos vinculados removidos com sucesso'}), 200
 
 
 ==================== C:\Coding\ifdashboard\backend\app\routes\__init__.py ====================
@@ -587,6 +639,48 @@ DATABASE_URL=sqlite:///ifdashboard.db
 CORS_ORIGINS=*
 
 
+==================== C:\Coding\ifdashboard\backend\Limpar_posts.py ====================
+import os
+import sqlite3
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, 'instance', 'ifdashboard.db')
+UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
+
+if not os.path.exists(DB_PATH):
+    print(f"Banco de dados nÃ£o encontrado em: {DB_PATH}")
+    exit(1)
+
+conn = sqlite3.connect(DB_PATH)
+cursor = conn.cursor()
+
+# 1. Remove imagens enviadas na pasta uploads associadas aos posts
+cursor.execute("SELECT image_url FROM posts WHERE image_url IS NOT NULL")
+for (image_url,) in cursor.fetchall():
+    if '/uploads/' in image_url:
+        nome_arquivo = image_url.rsplit('/uploads/', 1)[-1]
+        caminho = os.path.join(UPLOAD_DIR, nome_arquivo)
+        if os.path.exists(caminho):
+            os.remove(caminho)
+
+# 2. Limpa a tabela de eventos do calendÃ¡rio e a tabela de publicaÃ§Ãµes
+cursor.execute("DELETE FROM events")
+eventos_removidos = cursor.rowcount
+
+cursor.execute("DELETE FROM posts")
+posts_removidos = cursor.rowcount
+
+# 3. Reseta o autoincremento apenas se sqlite_sequence existir
+try:
+    cursor.execute("DELETE FROM sqlite_sequence WHERE name IN ('posts', 'events')")
+except sqlite3.OperationalError:
+    pass
+
+conn.commit()
+conn.close()
+
+print(f"Limpeza concluÃ­da: {posts_removidos} publicaÃ§Ãµes e {eventos_removidos} eventos removidos.")
+
 ==================== C:\Coding\ifdashboard\backend\run.py ====================
 import os
 import sys
@@ -755,6 +849,7 @@ if __name__ == '__main__':
   --color-magenta: #E8447A;
   --color-cobalt: #2E5EAA;
   --color-marigold: #D99B00;
+  --color-emerald: #198754;
   
   --bg-page: #FCFAF4;
   --card-bg: #FFFFFF;
@@ -772,6 +867,8 @@ if __name__ == '__main__':
   --badge-pesquisa-color: #16264A;
   --badge-editais-bg: #FFF1CC;
   --badge-editais-color: #5C4108;
+  --badge-avisos-bg: #D8F3E5;
+  --badge-avisos-color: #0F5132;
 }
 
 /* ============================================================
@@ -796,6 +893,7 @@ body[data-theme="dark"] {
   --color-magenta: #FF70A2;
   --color-cobalt: #74A2F7;
   --color-marigold: #FFD466;
+  --color-emerald: #4ADE80;
 
   /* Badges pastel tema escuro */
   --badge-achados-bg: #4A2416;
@@ -806,6 +904,8 @@ body[data-theme="dark"] {
   --badge-pesquisa-color: #A3C2F5;
   --badge-editais-bg: #453210;
   --badge-editais-color: #FFDD8C;
+  --badge-avisos-bg: #133A27;
+  --badge-avisos-color: #86EFAC;
 
   /* IntegraÃ§Ã£o profunda com variÃ¡veis Bootstrap 5.3 */
   --bs-body-bg: var(--bg-page);
@@ -1025,6 +1125,7 @@ h1, h2, h3, h4, h5, h6,
 .pino-servicos { background-color: var(--color-magenta); }
 .pino-pesquisa { background-color: var(--color-cobalt); }
 .pino-editais { background-color: var(--color-marigold); }
+.pino-avisos { background-color: var(--color-emerald); }
 
 /* Badges de Categoria */
 .etiqueta-achados {
@@ -1048,6 +1149,12 @@ h1, h2, h3, h4, h5, h6,
 .etiqueta-editais {
   background-color: var(--badge-editais-bg) !important;
   color: var(--badge-editais-color) !important;
+  font-weight: 600;
+}
+
+.etiqueta-avisos {
+  background-color: var(--badge-avisos-bg) !important;
+  color: var(--badge-avisos-color) !important;
   font-weight: 600;
 }
 
@@ -1558,6 +1665,7 @@ h1, h2, h3, h4, h5, h6,
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1568,6 +1676,7 @@ h1, h2, h3, h4, h5, h6,
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
@@ -1653,6 +1762,7 @@ h1, h2, h3, h4, h5, h6,
   margin-bottom: 0.2rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   transition: color 0.15s ease;
@@ -1999,7 +2109,8 @@ const MAPA_CATEGORIAS = {
   achados: { label: 'Achados e Perdidos', class: 'etiqueta-achados', pin: 'pino-achados' },
   servicos: { label: 'ServiÃ§os e Vendas', class: 'etiqueta-servicos', pin: 'pino-servicos' },
   pesquisa: { label: 'Pesquisa e ExtensÃ£o', class: 'etiqueta-pesquisa', pin: 'pino-pesquisa' },
-  editais: { label: 'Editais e Avisos', class: 'etiqueta-editais', pin: 'pino-editais' }
+  editais: { label: 'Editais', class: 'etiqueta-editais', pin: 'pino-editais' },
+  avisos: { label: 'Avisos', class: 'etiqueta-avisos', pin: 'pino-avisos' }
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -2070,8 +2181,8 @@ function navegar(aba) {
     achados: { titulo: 'Achados e Perdidos', subtitulo: 'Perdeu ou encontrou algo no campus? Ajude a comunidade a recuperar.' },
     servicos: { titulo: 'ServiÃ§os e Vendas', subtitulo: 'Compre, venda ou contrate aulas e serviÃ§os no Ã¢mbito do IF.' },
     pesquisa: { titulo: 'Pesquisa e ExtensÃ£o', subtitulo: 'Oportunidades de bolsas, monitorias e projetos de extensÃ£o abertos.' },
-    editais: { titulo: 'Editais e Avisos', subtitulo: 'PublicaÃ§Ãµes oficiais e prazos institucionais do campus.' },
-    calendario: { titulo: 'CalendÃ¡rio AcadÃªmico', subtitulo: 'Provas, prazos de editais, manutenÃ§Ãµes e eventos do campus.' },
+    editais: { titulo: 'Editais', subtitulo: 'Editais oficiais, processos seletivos e auxÃ­lios estudantis do campus.' },
+    avisos: { titulo: 'Avisos', subtitulo: 'Comunicados gerais, informativos e avisos da comunidade acadÃªmica.' },    calendario: { titulo: 'CalendÃ¡rio AcadÃªmico', subtitulo: 'Provas, prazos de editais, manutenÃ§Ãµes e eventos do campus.' },
     perfil: { titulo: 'Meu Perfil', subtitulo: 'Suas publicaÃ§Ãµes, itens salvos e atividades no mural.' }
   };
 
@@ -2648,6 +2759,13 @@ async function enviarNovaPublicacao(evento) {
     if (preco) dadosFormulario.append('price', preco);
   }
 
+  if (categoria === 'pesquisa' || categoria === 'editais' || categoria === 'avisos') {
+    const dataInicio = document.getElementById('postStartDate')?.value;
+    const dataFim = document.getElementById('postEndDate')?.value;
+    if (dataInicio) dadosFormulario.append('start_date', dataInicio);
+    if (dataFim) dadosFormulario.append('end_date', dataFim);
+  }
+
   const campoArquivo = document.getElementById('postImageFile');
   if (campoArquivo && campoArquivo.files && campoArquivo.files[0]) {
     dadosFormulario.append('image', campoArquivo.files[0]);
@@ -2673,7 +2791,10 @@ async function enviarNovaPublicacao(evento) {
 
     exibirAlerta('PublicaÃ§Ã£o criada com sucesso!', 'success');
     await carregarPublicacoes();
-    if (abaAtual === 'perfil') {
+    await carregarEventosCalendario();
+    if (abaAtual === 'calendario') {
+      renderizarCalendario();
+    } else if (abaAtual === 'perfil') {
       await renderizarPerfil(abaPerfilAtual);
     }
   } catch (erro) {
@@ -2712,8 +2833,16 @@ window.excluirMinhaPublicacao = excluirMinhaPublicacao;
 // Alternar campos condicionais conforme a categoria selecionada
 function aoMudarCategoria() {
   const categoria = document.getElementById('postCategory').value;
-  document.getElementById('conditionalAchados').classList.toggle('d-none', categoria !== 'achados');
-  document.getElementById('conditionalServicos').classList.toggle('d-none', categoria !== 'servicos');
+  const ehPeriodo = categoria === 'pesquisa' || categoria === 'editais' || categoria === 'avisos';
+
+  document.getElementById('conditionalAchados')?.classList.toggle('d-none', categoria !== 'achados');
+  document.getElementById('conditionalServicos')?.classList.toggle('d-none', categoria !== 'servicos');
+  document.getElementById('conditionalPeriodo')?.classList.toggle('d-none', !ehPeriodo);
+
+  const campoInicio = document.getElementById('postStartDate');
+  if (campoInicio) {
+    campoInicio.required = ehPeriodo;
+  }
 }
 
 // Manipular curtida rÃ¡pida no card
@@ -2846,15 +2975,10 @@ async function carregarEventosCalendario() {
     const eventos = await servicoApi.obterEventos();
     todosEventosCalendario = Array.isArray(eventos) ? eventos : [];
   } catch (erro) {
-    console.warn('Falha ao obter eventos da API, carregando eventos padrÃ£o:', erro);
-    todosEventosCalendario = [
-      { id: 1, category: 'editais', title: 'Prazo final â€” AuxÃ­lio PermanÃªncia', event_date: '2026-08-05', description: 'Ãšltimo dia para envio da documentaÃ§Ã£o na DIRENS.' },
-      { id: 2, category: 'pesquisa', title: 'Encerramento inscriÃ§Ãµes â€” RobÃ³tica', event_date: '2026-08-10', description: 'SeleÃ§Ã£o de bolsistas de extensÃ£o com a Prof. Carla.' },
-      { id: 3, category: 'editais', title: 'ManutenÃ§Ã£o LaboratÃ³rios 1 e 2', event_date: '2026-08-03', description: 'LaboratÃ³rios fechados para revisÃ£o da rede elÃ©trica.' }
-    ];
+    console.warn('Falha ao obter eventos da API:', erro);
+    todosEventosCalendario = [];
   }
 
-  // Agrupar eventos por data (YYYY-MM-DD)
   eventosPorData = new Map();
   todosEventosCalendario.forEach(ev => {
     if (!ev.event_date) return;
@@ -2865,7 +2989,6 @@ async function carregarEventosCalendario() {
     eventosPorData.get(chave).push(ev);
   });
 
-  // Se houver eventos e o mÃªs visÃ­vel estiver vazio, posiciona automaticamente no mÃªs do primeiro evento
   const anoAtual = dataCalendario.getFullYear();
   const mesAtual = dataCalendario.getMonth();
   if (eventosPorData.size > 0 && !temEventosNoMes(anoAtual, mesAtual)) {
@@ -2890,11 +3013,9 @@ function renderizarCalendario() {
   const mes = dataCalendario.getMonth();
   const chaveHoje = formatarChaveData(new Date());
 
-  // Atualizar tÃ­tulo do mÃªs
   const elementoTitulo = document.getElementById('calMonthLabel');
   if (elementoTitulo) elementoTitulo.textContent = `${MESES_ANO[mes]} ${ano}`;
 
-  // Contagem de eventos no mÃªs visÃ­vel
   let contagemEventosMes = 0;
   const prefixoMes = `${ano}-${String(mes + 1).padStart(2, '0')}`;
   for (const [chave, lista] of eventosPorData.entries()) {
@@ -2903,39 +3024,33 @@ function renderizarCalendario() {
   const badgeContagem = document.getElementById('eventsCountBadge');
   if (badgeContagem) badgeContagem.textContent = `${contagemEventosMes} evento${contagemEventosMes === 1 ? '' : 's'}`;
 
-  // Primeiro dia da semana do mÃªs e total de dias
   const primeiroDiaSemana = new Date(ano, mes, 1).getDay();
   const diasNoMes = new Date(ano, mes + 1, 0).getDate();
 
-  // CabeÃ§alho dos dias da semana
   let html = DIAS_SEMANA.map(dia => `<div class="dia-semana-cal">${dia}</div>`).join('');
 
-  // EspaÃ§os vazios antes do dia 1
   for (let i = 0; i < primeiroDiaSemana; i++) {
     html += `<div class="dia-cal vazio"></div>`;
   }
 
-  // Dias do mÃªs
   for (let d = 1; d <= diasNoMes; d++) {
     const chaveDia = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const eventosDoDia = eventosPorData.get(chaveDia) || [];
     const ehHoje = chaveDia === chaveHoje;
     const estaSelecionado = chaveDia === chaveDataSelecionada;
 
-    // Marcadores coloridos (dots)
     const dotsHtml = eventosDoDia.map(ev => {
       const pinClasse = MAPA_CATEGORIAS[ev.category]?.pin || 'pino-editais';
       return `<span class="ponto-cal ${pinClasse}" title="${escaparHTML(ev.title)}"></span>`;
     }).join('');
 
-    // Em desktop: mostrar prÃ©via compacta do primeiro evento
     const badgesHtml = eventosDoDia.slice(0, 1).map(ev => {
       const catClasse = MAPA_CATEGORIAS[ev.category]?.class || 'etiqueta-editais';
       return `<div class="etiqueta-evento-cal ${catClasse} d-none d-md-block" title="${escaparHTML(ev.title)}">${escaparHTML(ev.title)}</div>`;
     }).join('');
 
-    const maisBadge = eventosDoDia.length > 1 
-      ? `<span class="mais-eventos-cal text-muted d-none d-md-block">+${eventosDoDia.length - 1} evento${eventosDoDia.length > 2 ? 's' : ''}</span>` 
+    const maisBadge = eventosDoDia.length > 1
+      ? `<span class="mais-eventos-cal text-muted d-none d-md-block">+${eventosDoDia.length - 1} evento${eventosDoDia.length > 2 ? 's' : ''}</span>`
       : '';
 
     html += `
@@ -2956,21 +3071,18 @@ function renderizarCalendario() {
   const gradeCalendario = document.getElementById('calGrid');
   if (gradeCalendario) gradeCalendario.innerHTML = html;
 
-  // Renderizar a lista de agenda do dia selecionado
   renderizarAgendaDoDia(chaveDataSelecionada);
 }
 
 function selecionarData(chaveData) {
   chaveDataSelecionada = chaveData;
-  
-  // Atualizar classe selected nos dias do grid
+
   document.querySelectorAll('.dia-cal').forEach(el => {
     el.classList.toggle('selecionado', el.getAttribute('data-date') === chaveData);
   });
 
   renderizarAgendaDoDia(chaveData);
 
-  // Preencher a data padrÃ£o do modal de novo evento com a data clicada
   const campoData = document.getElementById('eventDate');
   if (campoData) campoData.value = chaveData;
 }
@@ -2984,7 +3096,7 @@ function renderizarAgendaDoDia(chaveData) {
 
   const [ano, mes, dia] = chaveData.split('-');
   const nomeMes = MESES_ANO[parseInt(mes, 10) - 1];
-  
+
   if (elementoTitulo) elementoTitulo.textContent = `Agenda â€” ${dia} de ${nomeMes}`;
   if (elementoSub) elementoSub.textContent = `${dia}/${mes}/${ano}`;
 
@@ -3017,9 +3129,25 @@ function renderizarAgendaDoDia(chaveData) {
   }).join('');
 }
 
-function aoClicarItemAgenda(idEvento) {
-  const evento = todosEventosCalendario.find(e => e.id === idEvento);
-  if (evento) abrirModalDetalhesEvento(evento);
+async function aoClicarItemAgenda(idEvento) {
+  const evento = todosEventosCalendario.find(e => Number(e.id) === Number(idEvento));
+  if (!evento) return;
+
+  if (evento.post_id) {
+    let pub = listaPublicacoes.find(p => Number(p.id) === Number(evento.post_id));
+    if (!pub) {
+      try {
+        pub = await servicoApi.obterPublicacaoPorId(evento.post_id);
+        if (pub) listaPublicacoes.push(pub);
+      } catch (e) {}
+    }
+    if (pub) {
+      abrirModalDetalhes(pub.id);
+      return;
+    }
+  }
+
+  abrirModalDetalhesEvento(evento);
 }
 
 function mudarMes(direcao) {
@@ -3035,7 +3163,7 @@ function irParaHoje() {
 
 function abrirModalDetalhesEvento(evento) {
   const configCategoria = MAPA_CATEGORIAS[evento.category] || { label: 'Aviso', class: 'etiqueta-editais' };
-  
+
   const elementoBadge = document.getElementById('modalEventBadge');
   if (elementoBadge) {
     elementoBadge.className = `badge rounded-pill px-3 py-1 ${configCategoria.class}`;
@@ -3057,7 +3185,7 @@ function abrirModalDetalhesEvento(evento) {
 
   const elementoModal = document.getElementById('eventDetailModal');
   if (elementoModal) {
-    const instanciaModal = new bootstrap.Modal(elementoModal);
+    const instanciaModal = bootstrap.Modal.getOrCreateInstance(elementoModal);
     instanciaModal.show();
   }
 }
@@ -3075,16 +3203,14 @@ async function salvarNovoEvento(evento) {
 
   try {
     await servicoApi.criarEvento({ title, event_date, category, description });
-    
-    // Fechar modal e resetar formulÃ¡rio
+
     const elementoModal = document.getElementById('newEventModal');
-    const instanciaModal = bootstrap.Modal.getInstance(elementoModal);
+    const instanciaModal = bootstrap.Modal.getOrCreateInstance(elementoModal);
     if (instanciaModal) instanciaModal.hide();
     document.getElementById('newEventForm').reset();
 
     exibirAlerta('Evento agendado com sucesso no calendÃ¡rio!', 'success');
-    
-    // Recarregar eventos e atualizar calendÃ¡rio
+
     await carregarEventosCalendario();
     renderizarCalendario();
   } catch (erro) {
@@ -3315,6 +3441,7 @@ async function renderizarPerfil(aba = 'meus') {
               <p class="card-text text-muted small flex-grow-1">${escaparHTML(post.description)}</p>
 
               ${post.price ? `<div class="fw-bold text-success mb-2">${escaparHTML(post.price)}</div>` : ''}
+              ${post.deadline ? `<div class="small fw-semibold text-primary mb-2"><i class="bi bi-calendar-range me-1"></i>PerÃ­odo: ${escaparHTML(post.deadline)}</div>` : ''}      
 
               <div class="d-flex justify-content-between align-items-center pt-2 mt-2 border-top text-muted small">
                 <span><i class="bi bi-geo-alt me-1"></i>${escaparHTML(post.location || 'Campus Lapa')}</span>
@@ -3348,23 +3475,28 @@ async function renderizarPerfil(aba = 'meus') {
 
 // FunÃ§Ã£o chamada ao clicar no botÃ£o da lixeira
 async function excluirMinhaPublicacao(idPublicacao) {
-  if (!confirm('Tem certeza que deseja excluir esta publicaÃ§Ã£o? Essa aÃ§Ã£o nÃ£o pode ser desfeita.')) {
+  if (!confirm('Tem certeza que deseja excluir esta publicaÃ§Ã£o? Ela tambÃ©m serÃ¡ removida do calendÃ¡rio.')) {
     return;
   }
 
   try {
     await servicoApi.removerPublicacao(idPublicacao);
-    publicacoesMinhas.delete(idPublicacao);
-    publicacoesSalvas.delete(idPublicacao);
-    publicacoesCurtidas.delete(idPublicacao);
+    publicacoesMinhas.delete(Number(idPublicacao));
+    publicacoesSalvas.delete(Number(idPublicacao));
+    publicacoesCurtidas.delete(Number(idPublicacao));
 
-    localStorage.setItem('ifdashboard_my_posts', JSON.stringify(Array.from(publicacoesMinhas)));
-    localStorage.setItem('ifdashboard_saved_posts', JSON.stringify(Array.from(publicacoesSalvas)));
-    localStorage.setItem('ifdashboard_liked_posts', JSON.stringify(Array.from(publicacoesCurtidas)));
+    localStorage.setItem(obterChaveUsuario('ifdashboard_my_posts'), JSON.stringify(Array.from(publicacoesMinhas)));
+    localStorage.setItem(obterChaveUsuario('ifdashboard_saved_posts'), JSON.stringify(Array.from(publicacoesSalvas)));
+    localStorage.setItem(obterChaveUsuario('ifdashboard_liked_posts'), JSON.stringify(Array.from(publicacoesCurtidas)));
 
-    exibirAlerta('PublicaÃ§Ã£o removida com sucesso.', 'success');
+    exibirAlerta('PublicaÃ§Ã£o e eventos vinculados removidos com sucesso.', 'success');
     await carregarPublicacoes();
-    renderizarPerfil(abaPerfilAtual);
+    await carregarEventosCalendario();
+    if (abaAtual === 'calendario') {
+      renderizarCalendario();
+    } else {
+      await renderizarPerfil(abaPerfilAtual);
+    }
   } catch (erro) {
     exibirAlerta('Erro ao excluir publicaÃ§Ã£o: ' + erro.message, 'danger');
   }
@@ -3475,7 +3607,7 @@ window.limparNotificacoes = limparNotificacoes;
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IFDashboard — Mural do Campus Lapa</title>
+  <title>IFDashboard â€” Mural do Campus Lapa</title>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3495,7 +3627,7 @@ window.limparNotificacoes = limparNotificacoes;
   <header class="navbar navbar-expand-lg border-bottom sticky-top barra-topo">
     <div class="container-fluid px-3 px-lg-4">
       
-      <!-- BOTÃO SANDWITCH: PIN DA LOGO (ABRE O MENU LATERAL MODAL) -->
+      <!-- BOTÃƒO SANDWITCH: PIN DA LOGO (ABRE O MENU LATERAL MODAL) -->
       <div class="d-flex align-items-center me-2">
         <button class="btn btn-pino-menu" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-label="Abrir Menu Lateral" title="Abrir Menu">
           <i class="bi bi-pin-angle-fill text-danger fs-3"></i>
@@ -3523,30 +3655,30 @@ window.limparNotificacoes = limparNotificacoes;
     </div>
   </header>
 
-  <!-- MENU LATERAL MODAL (OFFCANVAS FLUTUANTE QUE NÃO ALTERA O ESPAÇO DA PÁGINA) -->
+  <!-- MENU LATERAL MODAL (OFFCANVAS FLUTUANTE QUE NÃƒO ALTERA O ESPAÃ‡O DA PÃGINA) -->
   <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
     <div class="offcanvas-header border-bottom py-3 px-4">
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-pin-angle-fill text-danger fs-3"></i>
         <div>
           <h5 class="offcanvas-title fw-bold mb-0" id="sidebarMenuLabel" style="font-family: var(--font-display);">IFDashboard</h5>
-          <small class="text-muted" style="font-size: 0.72rem;">Campus Lapa • IF Baiano</small>
+          <small class="text-muted" style="font-size: 0.72rem;">Campus Lapa â€¢ IF Baiano</small>
         </div>
       </div>
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar Menu"></button>
     </div>
     
     <div class="offcanvas-body p-3">
-      <!-- Card Rápido do Usuário Logado -->
+      <!-- Card RÃ¡pido do UsuÃ¡rio Logado -->
       <div class="p-3 mb-3 rounded-3 bg-body-secondary border d-flex align-items-center gap-3">
         <span class="badge rounded-circle bg-danger text-white p-2 fs-5" id="drawerUserBadge" style="width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;">U</span>
         <div class="overflow-hidden">
-          <div class="fw-bold text-truncate" id="drawerUserName">Usuário</div>
+          <div class="fw-bold text-truncate" id="drawerUserName">UsuÃ¡rio</div>
           <small class="text-muted text-truncate d-block" id="drawerUserEmail" style="font-size: 0.75rem;">usuario@ifbaiano.edu.br</small>
         </div>
       </div>
 
-      <!-- Links de Navegação com Ícones e Destaque -->
+      <!-- Links de NavegaÃ§Ã£o com Ãcones e Destaque -->
       <div class="list-group list-group-flush nav-lateral">
         <a href="#" class="list-group-item list-group-item-action active py-3" data-nav="home" onclick="navegar('home')">
           <i class="bi bi-grid-fill me-3 fs-5"></i> Mural do Campus
@@ -3555,16 +3687,18 @@ window.limparNotificacoes = limparNotificacoes;
           <i class="bi bi-search-heart me-3 fs-5" style="color:var(--color-tangerine)"></i> Achados e Perdidos
         </a>
         <a href="#" class="list-group-item list-group-item-action py-3" data-nav="servicos" onclick="navegar('servicos')">
-          <i class="bi bi-tag-fill me-3 fs-5" style="color:var(--color-magenta)"></i> Serviços e Vendas
+          <i class="bi bi-tag-fill me-3 fs-5" style="color:var(--color-magenta)"></i> ServiÃ§os e Vendas
         </a>
         <a href="#" class="list-group-item list-group-item-action py-3" data-nav="pesquisa" onclick="navegar('pesquisa')">
-          <i class="bi bi-mortarboard-fill me-3 fs-5" style="color:var(--color-cobalt)"></i> Pesquisa e Extensão
-        </a>
+          <i class="bi bi-mortarboard-fill me-3 fs-5" style="color:var(--color-cobalt)"></i> Pesquisa e ExtensÃ£o
         <a href="#" class="list-group-item list-group-item-action py-3" data-nav="editais" onclick="navegar('editais')">
-          <i class="bi bi-megaphone-fill me-3 fs-5" style="color:var(--color-marigold)"></i> Editais e Avisos
+          <i class="bi bi-file-earmark-text-fill me-3 fs-5" style="color:var(--color-marigold)"></i> Editais
+        </a>
+        <a href="#" class="list-group-item list-group-item-action py-3" data-nav="avisos" onclick="navegar('avisos')">
+          <i class="bi bi-megaphone-fill me-3 fs-5" style="color:var(--color-emerald)"></i> Avisos
         </a>
         <a href="#" class="list-group-item list-group-item-action py-3" data-nav="calendario" onclick="navegar('calendario')">
-          <i class="bi bi-calendar3 me-3 fs-5 text-info"></i> Calendário Acadêmico
+          <i class="bi bi-calendar3 me-3 fs-5 text-info"></i> CalendÃ¡rio AcadÃªmico
         </a>
         <a href="#" class="list-group-item list-group-item-action py-3" data-nav="perfil" onclick="navegar('perfil')">
           <i class="bi bi-person-circle me-3 fs-5 text-secondary"></i> Meu Perfil
@@ -3572,7 +3706,7 @@ window.limparNotificacoes = limparNotificacoes;
       </div>
     </div>
 
-    <!-- Rodapé do Menu Drawer -->
+    <!-- RodapÃ© do Menu Drawer -->
     <div class="p-3 border-top bg-body-tertiary">
       <button class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2" onclick="fazerLogout()">
         <i class="bi bi-box-arrow-right"></i> Sair para a Landing Page
@@ -3580,20 +3714,20 @@ window.limparNotificacoes = limparNotificacoes;
     </div>
   </div>
 
-  <!-- LAYOUT PRINCIPAL: CONTEÚDO OCUPA 100% DA LARGURA (SEM MUDANÇA DE ESPAÇO) -->
+  <!-- LAYOUT PRINCIPAL: CONTEÃšDO OCUPA 100% DA LARGURA (SEM MUDANÃ‡A DE ESPAÃ‡O) -->
   <div class="container-fluid px-3 px-lg-4 py-4">
     <div class="row">
-      <!-- ÁREA DE CONTEÚDO PRINCIPAL -->
+      <!-- ÃREA DE CONTEÃšDO PRINCIPAL -->
       <main class="col-12">
         
-        <!-- CABEÇALHO DA SEÇÃO ATUAL -->
+        <!-- CABEÃ‡ALHO DA SEÃ‡ÃƒO ATUAL -->
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
           <div>
             <h2 class="h3 fw-bold mb-1" id="sectionTitle">Mural do Campus</h2>
-            <p class="text-muted small mb-0" id="sectionSubtitle">Avisos oficiais, achados, serviços e oportunidades da comunidade acadêmica.</p>
+            <p class="text-muted small mb-0" id="sectionSubtitle">Avisos oficiais, achados, serviÃ§os e oportunidades da comunidade acadÃªmica.</p>
           </div>
 
-          <!-- Filtros de Ordenação / Filtros rápidos -->
+          <!-- Filtros de OrdenaÃ§Ã£o / Filtros rÃ¡pidos -->
           <div class="btn-group mt-2 mt-sm-0" role="group" id="sortFilterGroup">
             <button type="button" class="btn btn-outline-secondary btn-sm active" data-sort="recent" onclick="definirOrdenacao('recent')">Recentes</button>
             <button type="button" class="btn btn-outline-secondary btn-sm" data-sort="likes" onclick="definirOrdenacao('likes')">Mais curtidos</button>
@@ -3602,7 +3736,7 @@ window.limparNotificacoes = limparNotificacoes;
 
         <!-- MENSAGEM DE ALERTA DE STATUS / FEEDBACK -->
         <div id="statusAlert" class="alert alert-info d-none alert-dismissible fade show" role="alert">
-          <span id="statusAlertText">Conectando à API...</span>
+          <span id="statusAlertText">Conectando Ã  API...</span>
           <button type="button" class="btn-close" onclick="ocultarAlerta()" aria-label="Close"></button>
         </div>
 
@@ -3615,21 +3749,21 @@ window.limparNotificacoes = limparNotificacoes;
           </div>
 
           <div class="row g-3 align-items-stretch">
-            <!-- Card Principal Maior (Slide com alternância automática) -->
+            <!-- Card Principal Maior (Slide com alternÃ¢ncia automÃ¡tica) -->
             <div class="col-lg-8">
               <div class="card-destaque-principal position-relative rounded-3 overflow-hidden shadow-sm" id="cardDestaquePrincipal">
-                <!-- Conteúdo do slide ativo inserido dinamicamente via JS -->
+                <!-- ConteÃºdo do slide ativo inserido dinamicamente via JS -->
               </div>
             </div>
 
-            <!-- Lista Lateral de Notícias Rápidas -->
+            <!-- Lista Lateral de NotÃ­cias RÃ¡pidas -->
             <div class="col-lg-4 d-flex flex-column justify-content-between">
               <div class="destaques-lista-lateral" id="destaquesListaLateral">
-                <!-- Manchetes das outras notícias do carrossel via JS -->
+                <!-- Manchetes das outras notÃ­cias do carrossel via JS -->
               </div>
               <div class="pt-2">
                 <a href="#postsContainer" class="btn btn-sm btn-sucesso-if px-3 fw-bold" onclick="rolarParaMural(event)">
-                  + notícias
+                  + notÃ­cias
                 </a>
               </div>
             </div>
@@ -3644,20 +3778,20 @@ window.limparNotificacoes = limparNotificacoes;
               <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Carregando...</span>
               </div>
-              <p class="mt-2 small">Carregando publicações do mural...</p>
+              <p class="mt-2 small">Carregando publicaÃ§Ãµes do mural...</p>
             </div>
           </div>
         </div>
 
-        <!-- CALENDÁRIO INTERATIVO VIEW -->
+        <!-- CALENDÃRIO INTERATIVO VIEW -->
         <div id="calendarView" class="d-none">
           <div class="row g-4">
             
-            <!-- COLUNA PRINCIPAL: GRID DO CALENDÁRIO -->
+            <!-- COLUNA PRINCIPAL: GRID DO CALENDÃRIO -->
             <div class="col-xl-8">
               <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 card-calendario">
                 
-                <!-- HEADER DO MÊS / CONTROLES DE NAVEGAÇÃO -->
+                <!-- HEADER DO MÃŠS / CONTROLES DE NAVEGAÃ‡ÃƒO -->
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-3 border-bottom gap-2">
                   <div class="d-flex align-items-center gap-2">
                     <h3 class="h4 fw-bold mb-0" id="calMonthLabel" style="font-family: var(--font-display);">Novembro 2026</h3>
@@ -3669,10 +3803,10 @@ window.limparNotificacoes = limparNotificacoes;
                       <i class="bi bi-calendar-check me-1"></i> Hoje
                     </button>
                     <div class="btn-group" role="group">
-                      <button class="btn btn-outline-secondary btn-sm" onclick="mudarMes(-1)" aria-label="Mês anterior" title="Mês anterior">
+                      <button class="btn btn-outline-secondary btn-sm" onclick="mudarMes(-1)" aria-label="MÃªs anterior" title="MÃªs anterior">
                         <i class="bi bi-chevron-left"></i>
                       </button>
-                      <button class="btn btn-outline-secondary btn-sm" onclick="mudarMes(1)" aria-label="Próximo mês" title="Próximo mês">
+                      <button class="btn btn-outline-secondary btn-sm" onclick="mudarMes(1)" aria-label="PrÃ³ximo mÃªs" title="PrÃ³ximo mÃªs">
                         <i class="bi bi-chevron-right"></i>
                       </button>
                     </div>
@@ -3682,7 +3816,7 @@ window.limparNotificacoes = limparNotificacoes;
                   </div>
                 </div>
 
-                <!-- CABEÇALHO DOS DIAS DA SEMANA E GRID MENSAL -->
+                <!-- CABEÃ‡ALHO DOS DIAS DA SEMANA E GRID MENSAL -->
                 <div class="grade-calendario" id="calGrid">
                   <!-- Renderizado dinamicamente via JS -->
                 </div>
@@ -3694,13 +3828,16 @@ window.limparNotificacoes = limparNotificacoes;
                     <span class="indicador-ponto-cal pino-achados"></span> Achados e Perdidos
                   </span>
                   <span class="d-inline-flex align-items-center gap-1">
-                    <span class="indicador-ponto-cal pino-servicos"></span> Serviços e Vendas
+                    <span class="indicador-ponto-cal pino-servicos"></span> ServiÃ§os e Vendas
                   </span>
                   <span class="d-inline-flex align-items-center gap-1">
-                    <span class="indicador-ponto-cal pino-pesquisa"></span> Pesquisa e Extensão
+                    <span class="indicador-ponto-cal pino-pesquisa"></span> Pesquisa e ExtensÃ£o
                   </span>
                   <span class="d-inline-flex align-items-center gap-1">
-                    <span class="indicador-ponto-cal pino-editais"></span> Editais e Avisos
+                    <span class="indicador-ponto-cal pino-editais"></span> Editais
+                  </span>
+                  <span class="d-inline-flex align-items-center gap-1">
+                    <span class="indicador-ponto-cal pino-avisos"></span> Avisos
                   </span>
                 </div>
 
@@ -3734,30 +3871,30 @@ window.limparNotificacoes = limparNotificacoes;
           </div>
         </div>
 
-        <!-- MEU PERFIL VIEW (MINHAS PUBLICAÇÕES, ITENS SALVOS, CURTIDAS, NOTIFICAÇÕES) -->
+        <!-- MEU PERFIL VIEW (MINHAS PUBLICAÃ‡Ã•ES, ITENS SALVOS, CURTIDAS, NOTIFICAÃ‡Ã•ES) -->
         <div id="perfilView" class="d-none">
-          <!-- Card de Apresentação do Perfil -->
+          <!-- Card de ApresentaÃ§Ã£o do Perfil -->
           <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 card-perfil-header">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
               <div class="d-flex align-items-center gap-3">
                 <span class="badge rounded-circle bg-danger text-white p-3 fs-3" id="profileBadgeLetter" style="width:58px;height:58px;display:inline-flex;align-items:center;justify-content:center;">U</span>
                 <div>
-                  <h4 class="fw-bold mb-1" id="profileName" style="font-family: var(--font-display);">Usuário</h4>
+                  <h4 class="fw-bold mb-1" id="profileName" style="font-family: var(--font-display);">UsuÃ¡rio</h4>
                   <p class="text-muted small mb-0" id="profileEmail">usuario@ifbaiano.edu.br</p>
                 </div>
               </div>
               <div class="d-flex flex-wrap gap-2">
                 <button class="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3" data-bs-toggle="modal" data-bs-target="#newPostModal">
-                  <i class="bi bi-plus-lg"></i> Nova Publicação
+                  <i class="bi bi-plus-lg"></i> Nova PublicaÃ§Ã£o
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- Barra de Abas / Chips do Perfil (Estilo Protótipo) -->
+          <!-- Barra de Abas / Chips do Perfil (Estilo ProtÃ³tipo) -->
           <div class="d-flex flex-wrap gap-2 mb-4" id="perfilTabs">
             <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1 active" data-perfil-aba="meus" onclick="mudarAbaPerfil('meus')">
-              <i class="bi bi-card-text me-1"></i>Minhas Publicações <span class="badge bg-secondary rounded-pill ms-1" id="countMeus">0</span>
+              <i class="bi bi-card-text me-1"></i>Minhas PublicaÃ§Ãµes <span class="badge bg-secondary rounded-pill ms-1" id="countMeus">0</span>
             </button>
             <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1" data-perfil-aba="salvos" onclick="mudarAbaPerfil('salvos')">
               <i class="bi bi-bookmark-fill me-1 text-warning"></i>Itens Salvos <span class="badge bg-secondary rounded-pill ms-1" id="countSalvos">0</span>
@@ -3766,11 +3903,11 @@ window.limparNotificacoes = limparNotificacoes;
               <i class="bi bi-heart-fill me-1 text-danger"></i>Curtidas <span class="badge bg-secondary rounded-pill ms-1" id="countCurtidos">0</span>
             </button>
             <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1" data-perfil-aba="notificacoes" onclick="mudarAbaPerfil('notificacoes')">
-              <i class="bi bi-bell-fill me-1 text-info"></i>Notificações <span class="badge bg-danger rounded-pill ms-1" id="countNotificacoes">0</span>
+              <i class="bi bi-bell-fill me-1 text-info"></i>NotificaÃ§Ãµes <span class="badge bg-danger rounded-pill ms-1" id="countNotificacoes">0</span>
             </button>
           </div>
 
-          <!-- Container do Conteúdo do Perfil -->
+          <!-- Container do ConteÃºdo do Perfil -->
           <div id="perfilContent">
             <!-- Renderizado dinamicamente via JS -->
           </div>
@@ -3780,7 +3917,7 @@ window.limparNotificacoes = limparNotificacoes;
     </div>
   </div>
 
-  <!-- MODAL: NOVA PUBLICAÇÃO -->
+  <!-- MODAL: NOVA PUBLICAÃ‡ÃƒO -->
   <div class="modal fade" id="newPostModal" tabindex="-1" aria-labelledby="newPostModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -3795,28 +3932,29 @@ window.limparNotificacoes = limparNotificacoes;
               <label for="postCategory" class="form-label">Categoria</label>
               <select class="form-select" id="postCategory" required onchange="aoMudarCategoria()">
                 <option value="achados">Achados e Perdidos</option>
-                <option value="servicos">Serviços e Vendas</option>
-                <option value="pesquisa">Pesquisa e Extensão</option>
-                <option value="editais">Editais e Avisos</option>
+                <option value="servicos">ServiÃ§os e Vendas</option>
+                <option value="pesquisa">Pesquisa e ExtensÃ£o</option>
+                <option value="editais">Editais</option>
+                <option value="avisos">Avisos</option>
               </select>
             </div>
 
             <!-- Campos Condicionais: Achados -->
             <div class="mb-3" id="conditionalAchados">
-              <label for="postSubTypeAchados" class="form-label">Situação</label>
+              <label for="postSubTypeAchados" class="form-label">SituaÃ§Ã£o</label>
               <select class="form-select" id="postSubTypeAchados">
                 <option value="achado">Achei algo</option>
                 <option value="perdido">Perdi algo</option>
               </select>
             </div>
 
-            <!-- Campos Condicionais: Serviços/Vendas -->
+            <!-- Campos Condicionais: ServiÃ§os/Vendas -->
             <div class="row g-2 mb-3 d-none" id="conditionalServicos">
               <div class="col-md-6">
-                <label for="postSubTypeServicos" class="form-label">Tipo de Anúncio</label>
+                <label for="postSubTypeServicos" class="form-label">Tipo de AnÃºncio</label>
                 <select class="form-select" id="postSubTypeServicos">
                   <option value="produto">Produto</option>
-                  <option value="servico">Serviço</option>
+                  <option value="servico">ServiÃ§o</option>
                   <option value="aula">Aula particular</option>
                 </select>
               </div>
@@ -3826,13 +3964,30 @@ window.limparNotificacoes = limparNotificacoes;
               </div>
             </div>
 
+            <!-- Campos Condicionais: Pesquisa e ExtensÃ£o / Editais e Avisos (PerÃ­odo no CalendÃ¡rio) -->
+            <div class="row g-2 mb-3 d-none" id="conditionalPeriodo">
+              <div class="col-md-6">
+                <label for="postStartDate" class="form-label">Data de InÃ­cio</label>
+                <input type="date" class="form-control" id="postStartDate">
+              </div>
+              <div class="col-md-6">
+                <label for="postEndDate" class="form-label">Data de TÃ©rmino <span class="text-muted small">(opcional)</span></label>
+                <input type="date" class="form-control" id="postEndDate">
+              </div>
+              <div class="col-12">
+                <div class="form-text text-muted small">
+                  <i class="bi bi-calendar-event me-1"></i>As datas informadas serÃ£o lanÃ§adas automaticamente no CalendÃ¡rio AcadÃªmico.
+                </div>
+              </div>
+            </div>
+
             <div class="mb-3">
-              <label for="postTitle" class="form-label">Título</label>
+              <label for="postTitle" class="form-label">TÃ­tulo</label>
               <input type="text" class="form-control" id="postTitle" placeholder="Ex: Chave encontrada no Bloco B" required>
             </div>
 
             <div class="mb-3">
-              <label for="postDesc" class="form-label">Descrição</label>
+              <label for="postDesc" class="form-label">DescriÃ§Ã£o</label>
               <textarea class="form-control" id="postDesc" rows="3" placeholder="Detalhes que facilitem identificar ou responder..."></textarea>
             </div>
 
@@ -3847,17 +4002,17 @@ window.limparNotificacoes = limparNotificacoes;
               </div>
             </div>
 
-            <!-- Anexo de Imagem (Carregar arquivo do usuário) -->
+            <!-- Anexo de Imagem (Carregar arquivo do usuÃ¡rio) -->
             <div class="mb-3">
               <label for="postImageFile" class="form-label small fw-semibold">
-                <i class="bi bi-image text-muted me-1"></i>Foto ou Imagem do Anúncio (Carregar do dispositivo)
+                <i class="bi bi-image text-muted me-1"></i>Foto ou Imagem do AnÃºncio (Carregar do dispositivo)
               </label>
               <input type="file" class="form-control" id="postImageFile" accept="image/png, image/jpeg, image/webp, image/gif" onchange="previsualizarImagem(event)">
-              <div class="form-text text-muted small">Carregue uma imagem do seu dispositivo (PNG, JPG, WEBP até 16MB).</div>
+              <div class="form-text text-muted small">Carregue uma imagem do seu dispositivo (PNG, JPG, WEBP atÃ© 16MB).</div>
               
-              <!-- Pré-visualização da imagem carregada com botão para remover -->
+              <!-- PrÃ©-visualizaÃ§Ã£o da imagem carregada com botÃ£o para remover -->
               <div id="postImagePreviewContainer" class="mt-2 position-relative d-none rounded-3 overflow-hidden border" style="max-height: 220px; background-color: var(--card-subtle);">
-                <img id="postImagePreview" src="" alt="Prévia da foto" class="w-100 object-fit-cover" style="max-height: 220px;">
+                <img id="postImagePreview" src="" alt="PrÃ©via da foto" class="w-100 object-fit-cover" style="max-height: 220px;">
                 <button type="button" class="btn btn-sm btn-dark position-absolute top-0 end-0 m-2 rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 32px; height: 32px;" onclick="limparUploadImagem()" title="Remover imagem">
                   <i class="bi bi-x-lg"></i>
                 </button>
@@ -3874,7 +4029,7 @@ window.limparNotificacoes = limparNotificacoes;
     </div>
   </div>
 
-  <!-- MODAL: DETALHES COMPLETOS DA PUBLICAÇÃO -->
+  <!-- MODAL: DETALHES COMPLETOS DA PUBLICAÃ‡ÃƒO -->
   <div class="modal fade" id="postDetailModal" tabindex="-1" aria-labelledby="postDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
@@ -3890,12 +4045,12 @@ window.limparNotificacoes = limparNotificacoes;
         </div>
 
         <div class="modal-body p-4">
-          <!-- Imagem da Publicação (quando existir) -->
+          <!-- Imagem da PublicaÃ§Ã£o (quando existir) -->
           <div id="postModalImageContainer" class="mb-4 text-center overflow-hidden rounded-4 border d-none" style="max-height: 400px; background-color: var(--card-subtle);">
-            <img id="postModalImage" src="" alt="Imagem da publicação" class="img-fluid w-100 object-fit-cover" style="max-height: 400px;">
+            <img id="postModalImage" src="" alt="Imagem da publicaÃ§Ã£o" class="img-fluid w-100 object-fit-cover" style="max-height: 400px;">
           </div>
 
-          <h3 class="fw-bold mb-2" id="postModalTitle" style="font-family: var(--font-display);">Título</h3>
+          <h3 class="fw-bold mb-2" id="postModalTitle" style="font-family: var(--font-display);">TÃ­tulo</h3>
           
           <!-- Metadados (Autor, Local, Data) -->
           <div class="d-flex flex-wrap align-items-center gap-3 text-muted small mb-3 pb-3 border-bottom">
@@ -3904,25 +4059,16 @@ window.limparNotificacoes = limparNotificacoes;
             <span id="postModalDate"><i class="bi bi-clock me-1"></i>Data</span>
           </div>
 
-          <!-- Preço / Prazo destacados -->
+          <!-- PreÃ§o / Prazo destacados -->
           <div id="postModalHighlight" class="mb-3 d-none"></div>
 
-          <!-- Descrição Completa -->
+          <!-- DescriÃ§Ã£o Completa -->
           <div class="mb-4">
-            <h6 class="fw-bold text-muted small text-uppercase mb-2">Descrição</h6>
-            <p class="text-body lh-base fs-6" id="postModalDesc" style="white-space: pre-line;">Descrição detalhada...</p>
+            <h6 class="fw-bold text-muted small text-uppercase mb-2">DescriÃ§Ã£o</h6>
+            <p class="text-body lh-base fs-6" id="postModalDesc" style="white-space: pre-line;">DescriÃ§Ã£o detalhada...</p>
           </div>
 
-          <!-- Ações (WhatsApp + Curtidas) -->
-          <div class="d-flex flex-wrap justify-content-between align-items-center pt-3 border-top gap-2">
-            <div id="postModalWppContainer" class="d-none">
-              <a id="postModalWppBtn" href="#" target="_blank" class="btn btn-success d-flex align-items-center gap-2 px-3">
-                <i class="bi bi-whatsapp fs-5"></i>
-                <span>Falar no WhatsApp</span>
-              </a>
-            </div>
-
-            <!-- Ações (WhatsApp + Salvar + Curtidas) -->
+            <!-- AÃ§Ãµes (WhatsApp + Salvar + Curtidas) -->
           <div class="d-flex flex-wrap justify-content-between align-items-center pt-3 border-top gap-2">
             <div id="postModalWppContainer" class="d-none">
               <a id="postModalWppBtn" href="#" target="_blank" class="btn btn-success d-flex align-items-center gap-2 px-3">
@@ -3932,13 +4078,13 @@ window.limparNotificacoes = limparNotificacoes;
             </div>
 
             <div class="d-flex align-items-center gap-2 ms-auto">
-              <!-- Botão de Salvar no Modal -->
+              <!-- BotÃ£o de Salvar no Modal -->
               <button class="btn btn-outline-warning text-dark d-flex align-items-center gap-2" id="postModalSaveBtn" onclick="aoSalvarNoModal()">
                 <i class="bi bi-bookmark" id="postModalSaveIcon"></i>
                 <span id="postModalSaveText">Salvar</span>
               </button>
 
-              <!-- Curtidas: só exibe se NÃO for categoria achados -->
+              <!-- Curtidas: sÃ³ exibe se NÃƒO for categoria achados -->
               <div id="postModalLikesContainer" class="d-flex align-items-center gap-2">
                 <button class="btn btn-outline-danger d-flex align-items-center gap-2" id="postModalLikeBtn">
                   <i class="bi bi-heart" id="postModalLikeIcon"></i>
@@ -3957,7 +4103,7 @@ window.limparNotificacoes = limparNotificacoes;
     </div>
   </div>
 
-  <!-- MODAL: NOVO EVENTO NO CALENDÁRIO -->
+  <!-- MODAL: NOVO EVENTO NO CALENDÃRIO -->
   <div class="modal fade" id="newEventModal" tabindex="-1" aria-labelledby="newEventModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -3971,8 +4117,8 @@ window.limparNotificacoes = limparNotificacoes;
           <div class="modal-body">
             
             <div class="mb-3">
-              <label for="eventTitle" class="form-label small fw-semibold">Título do Evento / Prazo</label>
-              <input type="text" class="form-control" id="eventTitle" placeholder="Ex: Prazo final para envio de relatório" required>
+              <label for="eventTitle" class="form-label small fw-semibold">TÃ­tulo do Evento / Prazo</label>
+              <input type="text" class="form-control" id="eventTitle" placeholder="Ex: Prazo final para envio de relatÃ³rio" required>
             </div>
 
             <div class="row g-2 mb-3">
@@ -3983,23 +4129,24 @@ window.limparNotificacoes = limparNotificacoes;
               <div class="col-md-6">
                 <label for="eventCategory" class="form-label small fw-semibold">Categoria</label>
                 <select class="form-select" id="eventCategory" required>
-                  <option value="editais">Editais e Avisos</option>
-                  <option value="pesquisa">Pesquisa e Extensão</option>
+                  <option value="editais">Editais</option>
+                  <option value="avisos">Avisos</option>
+                  <option value="pesquisa">Pesquisa e ExtensÃ£o</option>
                   <option value="achados">Achados e Perdidos</option>
-                  <option value="servicos">Serviços e Vendas</option>
+                  <option value="servicos">ServiÃ§os e Vendas</option>
                 </select>
               </div>
             </div>
 
             <div class="mb-3">
-              <label for="eventDesc" class="form-label small fw-semibold">Descrição / Observações</label>
-              <textarea class="form-control" id="eventDesc" rows="3" placeholder="Informações complementares sobre horários, locais ou instruções..."></textarea>
+              <label for="eventDesc" class="form-label small fw-semibold">DescriÃ§Ã£o / ObservaÃ§Ãµes</label>
+              <textarea class="form-control" id="eventDesc" rows="3" placeholder="InformaÃ§Ãµes complementares sobre horÃ¡rios, locais ou instruÃ§Ãµes..."></textarea>
             </div>
 
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-primary" id="btnSubmitEvent">Salvar no Calendário</button>
+            <button type="submit" class="btn btn-primary" id="btnSubmitEvent">Salvar no CalendÃ¡rio</button>
           </div>
         </form>
       </div>
@@ -4015,12 +4162,12 @@ window.limparNotificacoes = limparNotificacoes;
           <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <h4 class="fw-bold mb-2" id="modalEventTitle" style="font-family: var(--font-display);">Título do Evento</h4>
+          <h4 class="fw-bold mb-2" id="modalEventTitle" style="font-family: var(--font-display);">TÃ­tulo do Evento</h4>
           <div class="d-flex align-items-center gap-2 text-muted small mb-3">
             <i class="bi bi-calendar3"></i>
             <span id="modalEventDate">Data do evento</span>
           </div>
-          <p class="text-body mb-0" id="modalEventDesc">Descrição do evento...</p>
+          <p class="text-body mb-0" id="modalEventDesc">DescriÃ§Ã£o do evento...</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
@@ -4032,7 +4179,7 @@ window.limparNotificacoes = limparNotificacoes;
   <!-- Bootstrap 5 Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Scripts da Aplicação -->
+  <!-- Scripts da AplicaÃ§Ã£o -->
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
 </body>
