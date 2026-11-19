@@ -1,8 +1,9 @@
 /**
  * Camada de Comunicação com a API REST Flask
  */
-const URL_BASE_API = 'http://localhost:5000/api';
-const API_BASE_URL = URL_BASE_API; // Mantido para compatibilidade
+const HOST_API = window.location.hostname || 'localhost';
+const URL_BASE_API = `http://${HOST_API}:5000/api`;
+const API_BASE_URL = URL_BASE_API;
 
 const servicoApi = {
   // Obter lista de publicações com filtros
@@ -69,6 +70,18 @@ const servicoApi = {
       body: JSON.stringify({ action: acao })
     });
     if (!resposta.ok) throw new Error(`Erro ao registrar curtida: ${resposta.statusText}`);
+    return await resposta.json();
+  },
+
+  // Remover publicação
+  async removerPublicacao(id) {
+    const resposta = await fetch(`${URL_BASE_API}/posts/${id}`, {
+      method: 'DELETE'
+    });
+    if (!resposta.ok) {
+      const erro = await resposta.json().catch(() => ({}));
+      throw new Error(erro.error || `Erro ao remover publicação: ${resposta.statusText}`);
+    }
     return await resposta.json();
   },
 
@@ -151,5 +164,6 @@ servicoApi.checkHealth = servicoApi.verificarStatus;
 servicoApi.login = servicoApi.fazerLogin;
 servicoApi.register = servicoApi.cadastrarUsuario;
 servicoApi.loginAsGuest = servicoApi.entrarComoVisitante;
+servicoApi.deletePost = servicoApi.removerPublicacao;
 
 const api = servicoApi;

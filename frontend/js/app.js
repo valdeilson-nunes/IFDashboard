@@ -5,50 +5,62 @@
 
 let abaAtual = 'home';
 let tipoOrdenacao = 'recent';
-let publicacoesCurtidas = new Set(JSON.parse(localStorage.getItem('ifdashboard_liked_posts') || '[]'));
-let publicacoesSalvas = new Set(JSON.parse(localStorage.getItem('ifdashboard_saved_posts') || '[]'));
-let publicacoesMinhas = new Set(JSON.parse(localStorage.getItem('ifdashboard_my_posts') || '[]'));
 let listaPublicacoes = [];
 let abaPerfilAtual = 'meus';
 let idPublicacaoAtualDetalhes = null;
 
-// Notificações do usuário (persistidas no localStorage)
-let notificacoesUsuario = JSON.parse(localStorage.getItem('ifdashboard_notifications') || 'null');
-if (!notificacoesUsuario) {
-  notificacoesUsuario = [
-    {
-      id: 1,
-      titulo: 'Boas-vindas ao IFDashboard!',
-      mensagem: 'Fique por dentro de avisos oficiais, editais, achados e serviços do IF Baiano Campus Lapa.',
-      icone: 'bi-bell-fill text-primary',
-      data: 'Hoje',
-      lida: false
-    },
-    {
-      id: 2,
-      titulo: 'Novo edital publicado',
-      mensagem: 'Edital nº 14/2026 — Auxílio Permanência está com inscrições abertas na DIRENS.',
-      icone: 'bi-file-earmark-text-fill text-warning',
-      data: 'Ontem',
-      lida: false
-    },
-    {
-      id: 3,
-      titulo: 'Bolsas de Robótica',
-      mensagem: 'Seleção aberta de bolsistas de extensão com a Profa. Carla Menezes.',
-      icone: 'bi-mortarboard-fill text-info',
-      data: '2 dias atrás',
-      lida: true
-    }
-  ];
-  localStorage.setItem('ifdashboard_notifications', JSON.stringify(notificacoesUsuario));
+function obterUsuarioSessao() {
+  try {
+    return JSON.parse(localStorage.getItem('ifdashboard_user') || 'null');
+  } catch (e) {
+    return null;
+  }
 }
+
+function obterChaveUsuario(base) {
+  const usuario = obterUsuarioSessao();
+  if (!usuario) return `${base}_anonimo`;
+  if (usuario.role === 'guest') return `${base}_guest`;
+  const identificador = (usuario.email || usuario.id || 'padrao').toString().toLowerCase().trim();
+  return `${base}_${identificador}`;
+}
+
+let publicacoesCurtidas = new Set();
+let publicacoesSalvas = new Set();
+let publicacoesMinhas = new Set();
+let notificacoesUsuario = [];
+
+function carregarDadosLocaisUsuario() {
+  publicacoesCurtidas = new Set(JSON.parse(localStorage.getItem(obterChaveUsuario('ifdashboard_liked_posts')) || '[]'));
+  publicacoesSalvas = new Set(JSON.parse(localStorage.getItem(obterChaveUsuario('ifdashboard_saved_posts')) || '[]'));
+  publicacoesMinhas = new Set(JSON.parse(localStorage.getItem(obterChaveUsuario('ifdashboard_my_posts')) || '[]'));
+
+  const salvasNotif = JSON.parse(localStorage.getItem(obterChaveUsuario('ifdashboard_notifications')) || 'null');
+  if (salvasNotif) {
+    notificacoesUsuario = salvasNotif;
+  } else {
+    notificacoesUsuario = [
+      {
+        id: 1,
+        titulo: 'Boas-vindas ao IFDashboard!',
+        mensagem: 'Fique por dentro de avisos oficiais, editais, achados e serviços do IF Baiano Campus Lapa.',
+        icone: 'bi-bell-fill text-primary',
+        data: 'Hoje',
+        lida: false
+      }
+    ];
+    localStorage.setItem(obterChaveUsuario('ifdashboard_notifications'), JSON.stringify(notificacoesUsuario));
+  }
+}
+
+carregarDadosLocaisUsuario();
 
 const MAPA_CATEGORIAS = {
   achados: { label: 'Achados e Perdidos', class: 'etiqueta-achados', pin: 'pino-achados' },
   servicos: { label: 'Serviços e Vendas', class: 'etiqueta-servicos', pin: 'pino-servicos' },
   pesquisa: { label: 'Pesquisa e Extensão', class: 'etiqueta-pesquisa', pin: 'pino-pesquisa' },
-  editais: { label: 'Editais e Avisos', class: 'etiqueta-editais', pin: 'pino-editais' }
+  editais: { label: 'Editais', class: 'etiqueta-editais', pin: 'pino-editais' },
+  avisos: { label: 'Avisos', class: 'etiqueta-avisos', pin: 'pino-avisos' }
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -119,8 +131,8 @@ function navegar(aba) {
     achados: { titulo: 'Achados e Perdidos', subtitulo: 'Perdeu ou encontrou algo no campus? Ajude a comunidade a recuperar.' },
     servicos: { titulo: 'Serviços e Vendas', subtitulo: 'Compre, venda ou contrate aulas e serviços no âmbito do IF.' },
     pesquisa: { titulo: 'Pesquisa e Extensão', subtitulo: 'Oportunidades de bolsas, monitorias e projetos de extensão abertos.' },
-    editais: { titulo: 'Editais e Avisos', subtitulo: 'Publicações oficiais e prazos institucionais do campus.' },
-    calendario: { titulo: 'Calendário Acadêmico', subtitulo: 'Provas, prazos de editais, manutenções e eventos do campus.' },
+    editais: { titulo: 'Editais', subtitulo: 'Editais oficiais, processos seletivos e auxílios estudantis do campus.' },
+    avisos: { titulo: 'Avisos', subtitulo: 'Comunicados gerais, informativos e avisos da comunidade acadêmica.' },    calendario: { titulo: 'Calendário Acadêmico', subtitulo: 'Provas, prazos de editais, manutenções e eventos do campus.' },
     perfil: { titulo: 'Meu Perfil', subtitulo: 'Suas publicações, itens salvos e atividades no mural.' }
   };
 
@@ -598,7 +610,7 @@ async function curtirNoModal(idPublicacao) {
     } else {
       publicacoesCurtidas.add(idPublicacao);
     }
-    localStorage.setItem('ifdashboard_liked_posts', JSON.stringify(Array.from(publicacoesCurtidas)));
+    localStorage.setItem(obterChaveUsuario('ifdashboard_liked_posts'), JSON.stringify(Array.from(publicacoesCurtidas)));
     publicacao.likes_count = resultado.likes_count;
 
     // Atualizar visual do modal
@@ -680,17 +692,28 @@ async function enviarNovaPublicacao(evento) {
     subTipo = document.getElementById('postSubTypeServicos').value;
   }
 
+  const usuarioAtual = obterUsuarioSessao();
+  const autorAtual = (usuarioAtual && usuarioAtual.name) ? usuarioAtual.name.trim() : 'Usuário IF';
+
   const dadosFormulario = new FormData();
   dadosFormulario.append('category', categoria);
   if (subTipo) dadosFormulario.append('sub_type', subTipo);
   dadosFormulario.append('title', document.getElementById('postTitle').value.trim());
   dadosFormulario.append('description', document.getElementById('postDesc').value.trim());
   dadosFormulario.append('location', document.getElementById('postLocation').value.trim() || 'Campus Lapa');
+  dadosFormulario.append('author', autorAtual);
   dadosFormulario.append('contact_wpp', document.getElementById('postWpp').value.trim());
 
   if (categoria === 'servicos') {
     const preco = document.getElementById('postPrice').value.trim();
     if (preco) dadosFormulario.append('price', preco);
+  }
+
+  if (categoria === 'pesquisa' || categoria === 'editais' || categoria === 'avisos') {
+    const dataInicio = document.getElementById('postStartDate')?.value;
+    const dataFim = document.getElementById('postEndDate')?.value;
+    if (dataInicio) dadosFormulario.append('start_date', dataInicio);
+    if (dataFim) dadosFormulario.append('end_date', dataFim);
   }
 
   const campoArquivo = document.getElementById('postImageFile');
@@ -700,16 +723,16 @@ async function enviarNovaPublicacao(evento) {
 
   try {
     const respostaCriacao = await servicoApi.criarPublicacao(dadosFormulario);
-    if (respostaCriacao && respostaCriacao.post && respostaCriacao.post.id) {
-      publicacoesMinhas.add(respostaCriacao.post.id);
-      localStorage.setItem('ifdashboard_my_posts', JSON.stringify(Array.from(publicacoesMinhas)));
+    const idCriado = respostaCriacao?.id ?? respostaCriacao?.post?.id;
+
+    if (idCriado !== undefined && idCriado !== null) {
+      publicacoesMinhas.add(Number(idCriado));
+      localStorage.setItem(obterChaveUsuario('ifdashboard_my_posts'), JSON.stringify(Array.from(publicacoesMinhas)));
     }
-    
-    // Adicionar notificação no perfil
+
     const tituloPub = document.getElementById('postTitle').value.trim();
     adicionarNotificacao('Publicação criada', `Sua publicação "${tituloPub}" foi postada com sucesso no mural.`, 'bi-check-circle-fill text-success');
 
-    // Fechar modal e resetar formulário
     const elementoModal = document.getElementById('newPostModal');
     const instanciaModal = bootstrap.Modal.getInstance(elementoModal);
     if (instanciaModal) instanciaModal.hide();
@@ -718,8 +741,11 @@ async function enviarNovaPublicacao(evento) {
 
     exibirAlerta('Publicação criada com sucesso!', 'success');
     await carregarPublicacoes();
-    if (abaAtual === 'perfil') {
-      renderizarPerfil(abaPerfilAtual);
+    await carregarEventosCalendario();
+    if (abaAtual === 'calendario') {
+      renderizarCalendario();
+    } else if (abaAtual === 'perfil') {
+      await renderizarPerfil(abaPerfilAtual);
     }
   } catch (erro) {
     exibirAlerta('Falha ao criar publicação: ' + erro.message, 'danger');
@@ -729,11 +755,44 @@ async function enviarNovaPublicacao(evento) {
   }
 }
 
+async function excluirMinhaPublicacao(idPublicacao) {
+  if (!confirm('Tem certeza que deseja excluir esta publicação? Essa ação não pode ser desfeita.')) {
+    return;
+  }
+
+  try {
+    await servicoApi.removerPublicacao(idPublicacao);
+    publicacoesMinhas.delete(idPublicacao);
+    publicacoesSalvas.delete(idPublicacao);
+    publicacoesCurtidas.delete(idPublicacao);
+
+    localStorage.setItem('ifdashboard_my_posts', JSON.stringify(Array.from(publicacoesMinhas)));
+    localStorage.setItem('ifdashboard_saved_posts', JSON.stringify(Array.from(publicacoesSalvas)));
+    localStorage.setItem('ifdashboard_liked_posts', JSON.stringify(Array.from(publicacoesCurtidas)));
+
+    exibirAlerta('Publicação removida com sucesso.', 'success');
+    await carregarPublicacoes();
+    renderizarPerfil(abaPerfilAtual);
+  } catch (erro) {
+    exibirAlerta('Erro ao excluir publicação: ' + erro.message, 'danger');
+  }
+}
+
+window.excluirMinhaPublicacao = excluirMinhaPublicacao;
+
 // Alternar campos condicionais conforme a categoria selecionada
 function aoMudarCategoria() {
   const categoria = document.getElementById('postCategory').value;
-  document.getElementById('conditionalAchados').classList.toggle('d-none', categoria !== 'achados');
-  document.getElementById('conditionalServicos').classList.toggle('d-none', categoria !== 'servicos');
+  const ehPeriodo = categoria === 'pesquisa' || categoria === 'editais' || categoria === 'avisos';
+
+  document.getElementById('conditionalAchados')?.classList.toggle('d-none', categoria !== 'achados');
+  document.getElementById('conditionalServicos')?.classList.toggle('d-none', categoria !== 'servicos');
+  document.getElementById('conditionalPeriodo')?.classList.toggle('d-none', !ehPeriodo);
+
+  const campoInicio = document.getElementById('postStartDate');
+  if (campoInicio) {
+    campoInicio.required = ehPeriodo;
+  }
 }
 
 // Manipular curtida rápida no card
@@ -748,7 +807,7 @@ async function aoCurtir(idPublicacao, botao) {
     } else {
       publicacoesCurtidas.add(idPublicacao);
     }
-    localStorage.setItem('ifdashboard_liked_posts', JSON.stringify(Array.from(publicacoesCurtidas)));
+    localStorage.setItem(obterChaveUsuario('ifdashboard_liked_posts'), JSON.stringify(Array.from(publicacoesCurtidas)));
     
     // Atualizar no objeto da lista em memória também
     const postObj = listaPublicacoes.find(p => p.id === idPublicacao);
@@ -866,15 +925,10 @@ async function carregarEventosCalendario() {
     const eventos = await servicoApi.obterEventos();
     todosEventosCalendario = Array.isArray(eventos) ? eventos : [];
   } catch (erro) {
-    console.warn('Falha ao obter eventos da API, carregando eventos padrão:', erro);
-    todosEventosCalendario = [
-      { id: 1, category: 'editais', title: 'Prazo final — Auxílio Permanência', event_date: '2026-08-05', description: 'Último dia para envio da documentação na DIRENS.' },
-      { id: 2, category: 'pesquisa', title: 'Encerramento inscrições — Robótica', event_date: '2026-08-10', description: 'Seleção de bolsistas de extensão com a Prof. Carla.' },
-      { id: 3, category: 'editais', title: 'Manutenção Laboratórios 1 e 2', event_date: '2026-08-03', description: 'Laboratórios fechados para revisão da rede elétrica.' }
-    ];
+    console.warn('Falha ao obter eventos da API:', erro);
+    todosEventosCalendario = [];
   }
 
-  // Agrupar eventos por data (YYYY-MM-DD)
   eventosPorData = new Map();
   todosEventosCalendario.forEach(ev => {
     if (!ev.event_date) return;
@@ -885,7 +939,6 @@ async function carregarEventosCalendario() {
     eventosPorData.get(chave).push(ev);
   });
 
-  // Se houver eventos e o mês visível estiver vazio, posiciona automaticamente no mês do primeiro evento
   const anoAtual = dataCalendario.getFullYear();
   const mesAtual = dataCalendario.getMonth();
   if (eventosPorData.size > 0 && !temEventosNoMes(anoAtual, mesAtual)) {
@@ -910,11 +963,9 @@ function renderizarCalendario() {
   const mes = dataCalendario.getMonth();
   const chaveHoje = formatarChaveData(new Date());
 
-  // Atualizar título do mês
   const elementoTitulo = document.getElementById('calMonthLabel');
   if (elementoTitulo) elementoTitulo.textContent = `${MESES_ANO[mes]} ${ano}`;
 
-  // Contagem de eventos no mês visível
   let contagemEventosMes = 0;
   const prefixoMes = `${ano}-${String(mes + 1).padStart(2, '0')}`;
   for (const [chave, lista] of eventosPorData.entries()) {
@@ -923,39 +974,33 @@ function renderizarCalendario() {
   const badgeContagem = document.getElementById('eventsCountBadge');
   if (badgeContagem) badgeContagem.textContent = `${contagemEventosMes} evento${contagemEventosMes === 1 ? '' : 's'}`;
 
-  // Primeiro dia da semana do mês e total de dias
   const primeiroDiaSemana = new Date(ano, mes, 1).getDay();
   const diasNoMes = new Date(ano, mes + 1, 0).getDate();
 
-  // Cabeçalho dos dias da semana
   let html = DIAS_SEMANA.map(dia => `<div class="dia-semana-cal">${dia}</div>`).join('');
 
-  // Espaços vazios antes do dia 1
   for (let i = 0; i < primeiroDiaSemana; i++) {
     html += `<div class="dia-cal vazio"></div>`;
   }
 
-  // Dias do mês
   for (let d = 1; d <= diasNoMes; d++) {
     const chaveDia = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const eventosDoDia = eventosPorData.get(chaveDia) || [];
     const ehHoje = chaveDia === chaveHoje;
     const estaSelecionado = chaveDia === chaveDataSelecionada;
 
-    // Marcadores coloridos (dots)
     const dotsHtml = eventosDoDia.map(ev => {
       const pinClasse = MAPA_CATEGORIAS[ev.category]?.pin || 'pino-editais';
       return `<span class="ponto-cal ${pinClasse}" title="${escaparHTML(ev.title)}"></span>`;
     }).join('');
 
-    // Em desktop: mostrar prévia compacta do primeiro evento
     const badgesHtml = eventosDoDia.slice(0, 1).map(ev => {
       const catClasse = MAPA_CATEGORIAS[ev.category]?.class || 'etiqueta-editais';
       return `<div class="etiqueta-evento-cal ${catClasse} d-none d-md-block" title="${escaparHTML(ev.title)}">${escaparHTML(ev.title)}</div>`;
     }).join('');
 
-    const maisBadge = eventosDoDia.length > 1 
-      ? `<span class="mais-eventos-cal text-muted d-none d-md-block">+${eventosDoDia.length - 1} evento${eventosDoDia.length > 2 ? 's' : ''}</span>` 
+    const maisBadge = eventosDoDia.length > 1
+      ? `<span class="mais-eventos-cal text-muted d-none d-md-block">+${eventosDoDia.length - 1} evento${eventosDoDia.length > 2 ? 's' : ''}</span>`
       : '';
 
     html += `
@@ -976,21 +1021,18 @@ function renderizarCalendario() {
   const gradeCalendario = document.getElementById('calGrid');
   if (gradeCalendario) gradeCalendario.innerHTML = html;
 
-  // Renderizar a lista de agenda do dia selecionado
   renderizarAgendaDoDia(chaveDataSelecionada);
 }
 
 function selecionarData(chaveData) {
   chaveDataSelecionada = chaveData;
-  
-  // Atualizar classe selected nos dias do grid
+
   document.querySelectorAll('.dia-cal').forEach(el => {
     el.classList.toggle('selecionado', el.getAttribute('data-date') === chaveData);
   });
 
   renderizarAgendaDoDia(chaveData);
 
-  // Preencher a data padrão do modal de novo evento com a data clicada
   const campoData = document.getElementById('eventDate');
   if (campoData) campoData.value = chaveData;
 }
@@ -1004,7 +1046,7 @@ function renderizarAgendaDoDia(chaveData) {
 
   const [ano, mes, dia] = chaveData.split('-');
   const nomeMes = MESES_ANO[parseInt(mes, 10) - 1];
-  
+
   if (elementoTitulo) elementoTitulo.textContent = `Agenda — ${dia} de ${nomeMes}`;
   if (elementoSub) elementoSub.textContent = `${dia}/${mes}/${ano}`;
 
@@ -1037,9 +1079,25 @@ function renderizarAgendaDoDia(chaveData) {
   }).join('');
 }
 
-function aoClicarItemAgenda(idEvento) {
-  const evento = todosEventosCalendario.find(e => e.id === idEvento);
-  if (evento) abrirModalDetalhesEvento(evento);
+async function aoClicarItemAgenda(idEvento) {
+  const evento = todosEventosCalendario.find(e => Number(e.id) === Number(idEvento));
+  if (!evento) return;
+
+  if (evento.post_id) {
+    let pub = listaPublicacoes.find(p => Number(p.id) === Number(evento.post_id));
+    if (!pub) {
+      try {
+        pub = await servicoApi.obterPublicacaoPorId(evento.post_id);
+        if (pub) listaPublicacoes.push(pub);
+      } catch (e) {}
+    }
+    if (pub) {
+      abrirModalDetalhes(pub.id);
+      return;
+    }
+  }
+
+  abrirModalDetalhesEvento(evento);
 }
 
 function mudarMes(direcao) {
@@ -1055,7 +1113,7 @@ function irParaHoje() {
 
 function abrirModalDetalhesEvento(evento) {
   const configCategoria = MAPA_CATEGORIAS[evento.category] || { label: 'Aviso', class: 'etiqueta-editais' };
-  
+
   const elementoBadge = document.getElementById('modalEventBadge');
   if (elementoBadge) {
     elementoBadge.className = `badge rounded-pill px-3 py-1 ${configCategoria.class}`;
@@ -1077,7 +1135,7 @@ function abrirModalDetalhesEvento(evento) {
 
   const elementoModal = document.getElementById('eventDetailModal');
   if (elementoModal) {
-    const instanciaModal = new bootstrap.Modal(elementoModal);
+    const instanciaModal = bootstrap.Modal.getOrCreateInstance(elementoModal);
     instanciaModal.show();
   }
 }
@@ -1095,16 +1153,14 @@ async function salvarNovoEvento(evento) {
 
   try {
     await servicoApi.criarEvento({ title, event_date, category, description });
-    
-    // Fechar modal e resetar formulário
+
     const elementoModal = document.getElementById('newEventModal');
-    const instanciaModal = bootstrap.Modal.getInstance(elementoModal);
+    const instanciaModal = bootstrap.Modal.getOrCreateInstance(elementoModal);
     if (instanciaModal) instanciaModal.hide();
     document.getElementById('newEventForm').reset();
 
     exibirAlerta('Evento agendado com sucesso no calendário!', 'success');
-    
-    // Recarregar eventos e atualizar calendário
+
     await carregarEventosCalendario();
     renderizarCalendario();
   } catch (erro) {
@@ -1129,7 +1185,7 @@ function alternarSalvar(idPublicacao, botao) {
     adicionarNotificacao('Item Salvo', 'Uma publicação foi adicionada aos seus itens salvos.', 'bi-bookmark-check-fill text-warning');
   }
 
-  localStorage.setItem('ifdashboard_saved_posts', JSON.stringify(Array.from(publicacoesSalvas)));
+  localStorage.setItem(obterChaveUsuario('ifdashboard_saved_posts'), JSON.stringify(Array.from(publicacoesSalvas)));
 
   // Atualizar visual do botão acionado
   if (botao) {
@@ -1178,27 +1234,33 @@ function mudarAbaPerfil(aba) {
 }
 
 // Renderizar o conteúdo do Meu Perfil
-function renderizarPerfil(aba = 'meus') {
+async function renderizarPerfil(aba = 'meus') {
   const container = document.getElementById('perfilContent');
   if (!container) return;
 
-  const usuarioJson = localStorage.getItem('ifdashboard_user');
-  let usuario = null;
-  if (usuarioJson) {
-    try { usuario = JSON.parse(usuarioJson); } catch (e) {}
-  }
-  const nomeUsuario = usuario?.name || '';
+  // Garante a lista completa de publicações do mural (mesmo se o usuário veio de uma categoria filtrada)
+  try {
+    const todas = await servicoApi.obterPublicacoes('', '', 'recent');
+    if (Array.isArray(todas)) {
+      listaPublicacoes = todas;
+    }
+  } catch (e) {}
 
-  // 1. Filtrar Minhas Publicações
+  const usuario = obterUsuarioSessao();
+  const nomeUsuario = (usuario?.name || '').trim().toLowerCase();
+
+  // 1. Filtrar Minhas Publicações (por ID salvo no localStorage do usuário OU pelo nome do autor no banco)
   const minhasPublicacoes = listaPublicacoes.filter(p => {
-    return publicacoesMinhas.has(p.id) || (nomeUsuario && p.author === nomeUsuario);
+    const idPost = Number(p.id);
+    const autorPost = (p.author || '').trim().toLowerCase();
+    return publicacoesMinhas.has(idPost) || (nomeUsuario !== '' && autorPost === nomeUsuario);
   });
 
   // 2. Filtrar Itens Salvos
-  const salvosPublicacoes = listaPublicacoes.filter(p => publicacoesSalvas.has(p.id));
+  const salvosPublicacoes = listaPublicacoes.filter(p => publicacoesSalvas.has(Number(p.id)));
 
   // 3. Filtrar Curtidas
-  const curtidasPublicacoes = listaPublicacoes.filter(p => publicacoesCurtidas.has(p.id));
+  const curtidasPublicacoes = listaPublicacoes.filter(p => publicacoesCurtidas.has(Number(p.id)));
 
   // 4. Notificações não lidas
   const naoLidasCount = notificacoesUsuario.filter(n => !n.lida).length;
@@ -1300,7 +1362,7 @@ function renderizarPerfil(aba = 'meus') {
     return;
   }
 
-  // Renderizar o grid com os cards da lista
+// Renderizar o grid com os cards da lista
   container.innerHTML = `
     <div class="row g-3">
       ${listaAlvo.map(post => {
@@ -1329,11 +1391,18 @@ function renderizarPerfil(aba = 'meus') {
               <p class="card-text text-muted small flex-grow-1">${escaparHTML(post.description)}</p>
 
               ${post.price ? `<div class="fw-bold text-success mb-2">${escaparHTML(post.price)}</div>` : ''}
+              ${post.deadline ? `<div class="small fw-semibold text-primary mb-2"><i class="bi bi-calendar-range me-1"></i>Período: ${escaparHTML(post.deadline)}</div>` : ''}      
 
               <div class="d-flex justify-content-between align-items-center pt-2 mt-2 border-top text-muted small">
                 <span><i class="bi bi-geo-alt me-1"></i>${escaparHTML(post.location || 'Campus Lapa')}</span>
                 
                 <div class="d-flex align-items-center gap-2">
+                  ${aba === 'meus' ? `
+                    <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="event.stopPropagation(); excluirMinhaPublicacao(${post.id})" title="Excluir publicação">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  ` : ''}
+
                   <button class="btn btn-sm ${foiSalvo ? 'btn-warning text-dark' : 'btn-outline-secondary'} py-0 px-2" onclick="event.stopPropagation(); alternarSalvar(${post.id}, this)" title="${foiSalvo ? 'Remover dos salvos' : 'Salvar'}">
                     <i class="bi ${foiSalvo ? 'bi-bookmark-fill' : 'bi-bookmark'}"></i>
                   </button>
@@ -1354,6 +1423,36 @@ function renderizarPerfil(aba = 'meus') {
   `;
 }
 
+// Função chamada ao clicar no botão da lixeira
+async function excluirMinhaPublicacao(idPublicacao) {
+  if (!confirm('Tem certeza que deseja excluir esta publicação? Ela também será removida do calendário.')) {
+    return;
+  }
+
+  try {
+    await servicoApi.removerPublicacao(idPublicacao);
+    publicacoesMinhas.delete(Number(idPublicacao));
+    publicacoesSalvas.delete(Number(idPublicacao));
+    publicacoesCurtidas.delete(Number(idPublicacao));
+
+    localStorage.setItem(obterChaveUsuario('ifdashboard_my_posts'), JSON.stringify(Array.from(publicacoesMinhas)));
+    localStorage.setItem(obterChaveUsuario('ifdashboard_saved_posts'), JSON.stringify(Array.from(publicacoesSalvas)));
+    localStorage.setItem(obterChaveUsuario('ifdashboard_liked_posts'), JSON.stringify(Array.from(publicacoesCurtidas)));
+
+    exibirAlerta('Publicação e eventos vinculados removidos com sucesso.', 'success');
+    await carregarPublicacoes();
+    await carregarEventosCalendario();
+    if (abaAtual === 'calendario') {
+      renderizarCalendario();
+    } else {
+      await renderizarPerfil(abaPerfilAtual);
+    }
+  } catch (erro) {
+    exibirAlerta('Erro ao excluir publicação: ' + erro.message, 'danger');
+  }
+}
+window.excluirMinhaPublicacao = excluirMinhaPublicacao;
+
 // Adicionar uma nova notificação
 function adicionarNotificacao(titulo, mensagem, icone = 'bi-bell-fill text-primary') {
   const nova = {
@@ -1365,20 +1464,20 @@ function adicionarNotificacao(titulo, mensagem, icone = 'bi-bell-fill text-prima
     lida: false
   };
   notificacoesUsuario.unshift(nova);
-  localStorage.setItem('ifdashboard_notifications', JSON.stringify(notificacoesUsuario));
+  localStorage.setItem(obterChaveUsuario('ifdashboard_notifications'), JSON.stringify(notificacoesUsuario));
 }
 
 // Marcar todas notificações como lidas
 function marcarNotificacoesComoLidas() {
   notificacoesUsuario.forEach(n => n.lida = true);
-  localStorage.setItem('ifdashboard_notifications', JSON.stringify(notificacoesUsuario));
+  localStorage.setItem(obterChaveUsuario('ifdashboard_notifications'), JSON.stringify(notificacoesUsuario));
   renderizarPerfil('notificacoes');
 }
 
 // Limpar lista de notificações
 function limparNotificacoes() {
   notificacoesUsuario = [];
-  localStorage.setItem('ifdashboard_notifications', JSON.stringify([]));
+  localStorage.setItem(obterChaveUsuario('ifdashboard_notifications'), JSON.stringify(notificacoesUsuario));
   renderizarPerfil('notificacoes');
 }
 

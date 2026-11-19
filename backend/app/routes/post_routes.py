@@ -1,9 +1,10 @@
 import os
 import uuid
+from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 from app import db
-from app.models import Publicacao
+from app.models import Publicacao, Evento
 
 EXTENSOES_PERMITIDAS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
 ALLOWED_EXTENSIONS = EXTENSOES_PERMITIDAS
@@ -80,21 +81,69 @@ def criar_publicacao():
     if not dados.get('title') or not dados.get('category'):
         return jsonify({'error': 'Título e categoria são obrigatórios'}), 400
 
+    categoria = dados.get('category')
+    data_inicio_str = (dados.get('start_date') or '').strip()
+    data_fim_str = (dados.get('end_date') or '').strip()
+    prazo_formatado = dados.get('deadline')
+
+    dt_inicio = None
+    dt_fim = None
+
+    if categoria in ('pesquisa', 'editais', 'avisos'):
+        if not data_inicio_str:
+            return jsonify({'error': 'A data de início do período é obrigatória para esta categoria.'}), 400
+        try:
+            dt_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
+            dt_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date() if data_fim_str else dt_inicio
+        except ValueError:
+            return jsonify({'error': 'Formato de data inválido. Use AAAA-MM-DD.'}), 400
+
+        if dt_fim < dt_inicio:
+            return jsonify({'error': 'A data de término não pode ser anterior à data de início.'}), 400
+
+        if dt_inicio == dt_fim:
+            prazo_formatado = dt_inicio.strftime('%d/%m/%Y')
+        else:
+            prazo_formatado = f"{dt_inicio.strftime('%d/%m/%Y')} a {dt_fim.strftime('%d/%m/%Y')}"
+
     nova_publicacao = Publicacao(
-        category=dados.get('category'),
+        category=categoria,
         sub_type=dados.get('sub_type'),
         title=dados.get('title'),
         description=dados.get('description', ''),
         location=dados.get('location', 'Campus Lapa'),
         author=dados.get('author', 'Usuário IF'),
         price=dados.get('price'),
-        deadline=dados.get('deadline'),
+        deadline=prazo_formatado,
         contact_wpp=dados.get('contact_wpp'),
         image_url=url_imagem,
         is_pinned=bool(dados.get('is_pinned', False))
     )
 
     db.session.add(nova_publicacao)
+    db.session.flush()  # Garante o ID da publicação antes de criar os eventos
+
+    # Lança os dias correspondentes no Calendário Acadêmico
+    if dt_inicio and dt_fim:
+        total_dias = (dt_fim - dt_inicio).days
+        for i in range(total_dias + 1):
+            dia_atual = dt_inicio + timedelta(days=i)
+            titulo_evento = nova_publicacao.title
+            if total_dias > 0:
+                if i == 0:
+                    titulo_evento = f"[Início] {nova_publicacao.title}"
+                elif i == total_dias:
+                    titulo_evento = f"[Encerramento] {nova_publicacao.title}"
+
+            evento_cal = Evento(
+                category=nova_publicacao.category,
+                title=titulo_evento,
+                description=nova_publicacao.description,
+                event_date=dia_atual,
+                post_id=nova_publicacao.id
+            )
+            db.session.add(evento_cal)
+
     db.session.commit()
 
     return jsonify(nova_publicacao.para_dicionario()), 201
@@ -123,10 +172,21 @@ toggle_like = alternar_curtida
 
 @rotas_publicacoes.route('/<int:post_id>', methods=['DELETE'])
 def remover_publicacao(post_id):
-    """Remove uma publicação pelo identificador"""
+    """Remove uma publicação, sua imagem local e os eventos vinculados no calendário"""
     publicacao = Publicacao.query.get_or_404(post_id)
+
+    if publicacao.image_url and '/uploads/' in publicacao.image_url:
+        nome_arquivo = publicacao.image_url.rsplit('/uploads/', 1)[-1]
+        caminho_arquivo = os.path.join(current_app.config['UPLOAD_FOLDER'], secure_filename(nome_arquivo))
+        if os.path.exists(caminho_arquivo):
+            try:
+                os.remove(caminho_arquivo)
+            except OSError:
+                pass
+
+    # Remove todos os eventos do calendário vinculados a esta publicação
+    Evento.query.filter_by(post_id=publicacao.id).delete()
+
     db.session.delete(publicacao)
     db.session.commit()
-    return jsonify({'message': 'Publicação removida com sucesso'}), 200
-
-delete_post = remover_publicacao
+    return jsonify({'message': 'Publicação e eventos vinculados removidos com sucesso'}), 200

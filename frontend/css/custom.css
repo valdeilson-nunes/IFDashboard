@@ -12,6 +12,7 @@
   --color-magenta: #E8447A;
   --color-cobalt: #2E5EAA;
   --color-marigold: #D99B00;
+  --color-emerald: #198754;
   
   --bg-page: #FCFAF4;
   --card-bg: #FFFFFF;
@@ -29,6 +30,8 @@
   --badge-pesquisa-color: #16264A;
   --badge-editais-bg: #FFF1CC;
   --badge-editais-color: #5C4108;
+  --badge-avisos-bg: #D8F3E5;
+  --badge-avisos-color: #0F5132;
 }
 
 /* ============================================================
@@ -53,6 +56,7 @@ body[data-theme="dark"] {
   --color-magenta: #FF70A2;
   --color-cobalt: #74A2F7;
   --color-marigold: #FFD466;
+  --color-emerald: #4ADE80;
 
   /* Badges pastel tema escuro */
   --badge-achados-bg: #4A2416;
@@ -63,6 +67,8 @@ body[data-theme="dark"] {
   --badge-pesquisa-color: #A3C2F5;
   --badge-editais-bg: #453210;
   --badge-editais-color: #FFDD8C;
+  --badge-avisos-bg: #133A27;
+  --badge-avisos-color: #86EFAC;
 
   /* Integração profunda com variáveis Bootstrap 5.3 */
   --bs-body-bg: var(--bg-page);
@@ -282,6 +288,7 @@ h1, h2, h3, h4, h5, h6,
 .pino-servicos { background-color: var(--color-magenta); }
 .pino-pesquisa { background-color: var(--color-cobalt); }
 .pino-editais { background-color: var(--color-marigold); }
+.pino-avisos { background-color: var(--color-emerald); }
 
 /* Badges de Categoria */
 .etiqueta-achados {
@@ -305,6 +312,12 @@ h1, h2, h3, h4, h5, h6,
 .etiqueta-editais {
   background-color: var(--badge-editais-bg) !important;
   color: var(--badge-editais-color) !important;
+  font-weight: 600;
+}
+
+.etiqueta-avisos {
+  background-color: var(--badge-avisos-bg) !important;
+  color: var(--badge-avisos-color) !important;
   font-weight: 600;
 }
 
@@ -815,6 +828,7 @@ h1, h2, h3, h4, h5, h6,
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -825,6 +839,7 @@ h1, h2, h3, h4, h5, h6,
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
@@ -910,6 +925,7 @@ h1, h2, h3, h4, h5, h6,
   margin-bottom: 0.2rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   transition: color 0.15s ease;

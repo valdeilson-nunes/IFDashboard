@@ -87,9 +87,11 @@
         </a>
         <a href="#" class="list-group-item list-group-item-action py-3" data-nav="pesquisa" onclick="navegar('pesquisa')">
           <i class="bi bi-mortarboard-fill me-3 fs-5" style="color:var(--color-cobalt)"></i> Pesquisa e Extensão
-        </a>
         <a href="#" class="list-group-item list-group-item-action py-3" data-nav="editais" onclick="navegar('editais')">
-          <i class="bi bi-megaphone-fill me-3 fs-5" style="color:var(--color-marigold)"></i> Editais e Avisos
+          <i class="bi bi-file-earmark-text-fill me-3 fs-5" style="color:var(--color-marigold)"></i> Editais
+        </a>
+        <a href="#" class="list-group-item list-group-item-action py-3" data-nav="avisos" onclick="navegar('avisos')">
+          <i class="bi bi-megaphone-fill me-3 fs-5" style="color:var(--color-emerald)"></i> Avisos
         </a>
         <a href="#" class="list-group-item list-group-item-action py-3" data-nav="calendario" onclick="navegar('calendario')">
           <i class="bi bi-calendar3 me-3 fs-5 text-info"></i> Calendário Acadêmico
@@ -228,7 +230,10 @@
                     <span class="indicador-ponto-cal pino-pesquisa"></span> Pesquisa e Extensão
                   </span>
                   <span class="d-inline-flex align-items-center gap-1">
-                    <span class="indicador-ponto-cal pino-editais"></span> Editais e Avisos
+                    <span class="indicador-ponto-cal pino-editais"></span> Editais
+                  </span>
+                  <span class="d-inline-flex align-items-center gap-1">
+                    <span class="indicador-ponto-cal pino-avisos"></span> Avisos
                   </span>
                 </div>
 
@@ -325,7 +330,8 @@
                 <option value="achados">Achados e Perdidos</option>
                 <option value="servicos">Serviços e Vendas</option>
                 <option value="pesquisa">Pesquisa e Extensão</option>
-                <option value="editais">Editais e Avisos</option>
+                <option value="editais">Editais</option>
+                <option value="avisos">Avisos</option>
               </select>
             </div>
 
@@ -351,6 +357,23 @@
               <div class="col-md-6">
                 <label for="postPrice" class="form-label">Valor (R$)</label>
                 <input type="text" class="form-control" id="postPrice" placeholder="Ex: R$ 35,00 ou A combinar">
+              </div>
+            </div>
+
+            <!-- Campos Condicionais: Pesquisa e Extensão / Editais e Avisos (Período no Calendário) -->
+            <div class="row g-2 mb-3 d-none" id="conditionalPeriodo">
+              <div class="col-md-6">
+                <label for="postStartDate" class="form-label">Data de Início</label>
+                <input type="date" class="form-control" id="postStartDate">
+              </div>
+              <div class="col-md-6">
+                <label for="postEndDate" class="form-label">Data de Término <span class="text-muted small">(opcional)</span></label>
+                <input type="date" class="form-control" id="postEndDate">
+              </div>
+              <div class="col-12">
+                <div class="form-text text-muted small">
+                  <i class="bi bi-calendar-event me-1"></i>As datas informadas serão lançadas automaticamente no Calendário Acadêmico.
+                </div>
               </div>
             </div>
 
@@ -441,7 +464,7 @@
             <p class="text-body lh-base fs-6" id="postModalDesc" style="white-space: pre-line;">Descrição detalhada...</p>
           </div>
 
-          <!-- Ações (WhatsApp + Curtidas) -->
+            <!-- Ações (WhatsApp + Salvar + Curtidas) -->
           <div class="d-flex flex-wrap justify-content-between align-items-center pt-3 border-top gap-2">
             <div id="postModalWppContainer" class="d-none">
               <a id="postModalWppBtn" href="#" target="_blank" class="btn btn-success d-flex align-items-center gap-2 px-3">
@@ -450,32 +473,23 @@
               </a>
             </div>
 
-            <!-- Ações (WhatsApp + Salvar + Curtidas) -->
-            <div class="d-flex flex-wrap justify-content-between align-items-center pt-3 border-top gap-2">
-              <div id="postModalWppContainer" class="d-none">
-                <a id="postModalWppBtn" href="#" target="_blank" class="btn btn-success d-flex align-items-center gap-2 px-3">
-                  <i class="bi bi-whatsapp fs-5"></i>
-                  <span>Falar no WhatsApp</span>
-                </a>
-              </div>
+            <div class="d-flex align-items-center gap-2 ms-auto">
+              <!-- Botão de Salvar no Modal -->
+              <button class="btn btn-outline-warning text-dark d-flex align-items-center gap-2" id="postModalSaveBtn" onclick="aoSalvarNoModal()">
+                <i class="bi bi-bookmark" id="postModalSaveIcon"></i>
+                <span id="postModalSaveText">Salvar</span>
+              </button>
 
-              <div class="d-flex align-items-center gap-2 ms-auto">
-                <!-- Botão de Salvar no Modal -->
-                <button class="btn btn-outline-warning text-dark d-flex align-items-center gap-2" id="postModalSaveBtn" onclick="aoSalvarNoModal()">
-                  <i class="bi bi-bookmark" id="postModalSaveIcon"></i>
-                  <span id="postModalSaveText">Salvar</span>
+              <!-- Curtidas: só exibe se NÃO for categoria achados -->
+              <div id="postModalLikesContainer" class="d-flex align-items-center gap-2">
+                <button class="btn btn-outline-danger d-flex align-items-center gap-2" id="postModalLikeBtn">
+                  <i class="bi bi-heart" id="postModalLikeIcon"></i>
+                  <span id="postModalLikeText">Curtir</span>
+                  <span class="badge bg-danger text-white rounded-pill ms-1" id="postModalLikeCount">0</span>
                 </button>
-
-                <!-- Curtidas: só exibe se NÃO for categoria achados -->
-                <div id="postModalLikesContainer" class="d-flex align-items-center gap-2">
-                  <button class="btn btn-outline-danger d-flex align-items-center gap-2" id="postModalLikeBtn">
-                    <i class="bi bi-heart" id="postModalLikeIcon"></i>
-                    <span id="postModalLikeText">Curtir</span>
-                    <span class="badge bg-danger text-white rounded-pill ms-1" id="postModalLikeCount">0</span>
-                  </button>
-                </div>
               </div>
             </div>
+          </div>
         </div>
         
         <div class="modal-footer bg-body-tertiary">
@@ -511,7 +525,8 @@
               <div class="col-md-6">
                 <label for="eventCategory" class="form-label small fw-semibold">Categoria</label>
                 <select class="form-select" id="eventCategory" required>
-                  <option value="editais">Editais e Avisos</option>
+                  <option value="editais">Editais</option>
+                  <option value="avisos">Avisos</option>
                   <option value="pesquisa">Pesquisa e Extensão</option>
                   <option value="achados">Achados e Perdidos</option>
                   <option value="servicos">Serviços e Vendas</option>
